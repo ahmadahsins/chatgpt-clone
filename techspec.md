@@ -1,412 +1,189 @@
-# ChatGPT Clone - Technical Specification Document
+# **Tech Spec: "AI Chat" (ChatGPT Clone)**
 
-## Project Overview
+## **1. Project Overview**
 
-A full-stack ChatGPT clone built with modern web technologies, featuring real-time AI conversations, user authentication, and conversation management.
+This document outlines the technical specifications for building a "ChatGPT Clone" web application. The project will leverage a modern, fullstack TypeScript stack to deliver a real-time, streaming chat interface with persistent conversation history.
 
-### Tech Stack
-- **Frontend & Backend**: Next.js 15 (App Router, TypeScript)
-- **AI Integration**: Vercel AI SDK + AI UI Elements
-- **Styling**: Tailwind CSS
-- **Database**: Neon Serverless Postgres
-- **ORM**: Drizzle ORM
-- **Authentication**: Better Auth
+### **1.1. Core Tech Stack**
 
----
-
-## Core Features
-
-### 1. Authentication & User Management
-- Email/password authentication
-- OAuth providers (Google, GitHub)
-- Session management
-- User profile management
-- Password reset functionality
-
-### 2. Chat Interface
-- Real-time streaming AI responses
-- Markdown rendering with syntax highlighting
-- Code block copy functionality
-- Message regeneration
-- Stop generation capability
-- Token usage tracking
-
-### 3. Conversation Management
-- Create new conversations
-- View conversation history
-- Delete conversations
-- Rename conversations
-- Search conversations
-- Pin important conversations
-
-### 4. AI Features
-- Multiple AI model selection (GPT-3.5, GPT-4, etc.)
-- System prompts customization
-- Temperature and parameter controls
-- Context window management
-- Streaming responses
-
-### 5. UI/UX Features
-- Responsive design (mobile, tablet, desktop)
-- Dark/light mode toggle
-- Sidebar with conversation list
-- Empty state guidance
-- Loading states and skeletons
-- Error handling and retry mechanisms
+- **Framework:** Next.js 14+ (App Router)
+- **Language:** TypeScript
+- **AI/Streaming:** Vercel AI SDK (using `useChat` hook) & AI UI Elements
+- **Styling:** TailwindCSS
+- **Authentication:** Better Auth
+- **Database:** Neon (Serverless Postgres)
+- **ORM:** Drizzle ORM
 
 ---
 
-## User Flows
+## **2. Main Features**
 
-### User Registration & Login Flow
-```
-1. User visits homepage
-2. Click "Sign Up" or "Login"
-3. Choose authentication method:
-   - Email/Password → Fill form → Verify email → Access dashboard
-   - OAuth (Google/GitHub) → Authorize → Access dashboard
-4. Redirect to main chat interface
-```
+1.  **User Authentication:**
 
-### Chat Interaction Flow
-```
-1. User lands on chat interface
-2. Options:
-   a. Start new conversation → Empty chat view
-   b. Select existing conversation → Load chat history
-3. User types message in input field
-4. User clicks send or presses Enter
-5. Message appears in chat
-6. AI response streams in real-time
-7. Response completes with token count
-8. User can:
-   - Continue conversation
-   - Regenerate response
-   - Copy response
-   - Start new chat
-```
+    - Secure sign-up, sign-in, and sign-out functionality provided by Better Auth.
+    - Protected routes for the chat interface, accessible only to authenticated users.
+    - All chat data will be scoped to the authenticated `userId`.
 
-### Conversation Management Flow
-```
-1. User opens sidebar
-2. View list of all conversations
-3. User can:
-   - Click conversation → Load in main view
-   - Hover conversation → Show actions (rename, delete, pin)
-   - Search conversations → Filter by keyword
-   - Create new conversation → Navigate to empty chat
-   - Delete conversation → Confirm → Remove from list
-```
+2.  **Real-time Streaming Chat:**
 
-### Settings & Preferences Flow
-```
-1. User clicks settings icon
-2. Access settings panel/page
-3. Configure:
-   - AI model selection
-   - System prompt
-   - Temperature/parameters
-   - Theme (dark/light)
-   - Account settings
-4. Save changes → Apply immediately
-```
+    - A core chat input interface.
+    - Messages sent to the backend (Next.js API Route) will be forwarded to an LLM (e.g., OpenAI).
+    - Responses from the LLM will be streamed back to the client in real-time using the Vercel AI SDK and displayed token-by-token.
+
+3.  **Persistent Conversation History:**
+
+    - All user messages and AI responses will be saved to the Neon Postgres database.
+    - A sidebar will list all past chat conversations for the logged-in user.
+    - Selecting a conversation from the history will load the previous messages into the chat window.
+
+4.  **Chat Management:**
+
+    - **New Chat:** A "New Chat" button to clear the current conversation and start a new one.
+    - **Chat Titling:** The first user prompt will be used to automatically generate a title for the chat (e.g., "History of Rome"), which is then saved in the database.
+    - **(Future Scope):** Rename and Delete chat conversations.
 
 ---
 
-## Database Schema
+## **3. Technology Deep Dive**
 
-### Users Table
-```sql
-users {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  email: varchar(255) UNIQUE NOT NULL
-  name: varchar(255)
-  password_hash: varchar(255) -- null for OAuth users
-  avatar_url: text
-  provider: varchar(50) -- 'email', 'google', 'github'
-  provider_id: varchar(255) -- external provider user ID
-  email_verified: boolean DEFAULT false
-  created_at: timestamp DEFAULT now()
-  updated_at: timestamp DEFAULT now()
-}
-```
-
-### Sessions Table (Better Auth)
-```sql
-sessions {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id: uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE
-  token: varchar(255) UNIQUE NOT NULL
-  expires_at: timestamp NOT NULL
-  created_at: timestamp DEFAULT now()
-  updated_at: timestamp DEFAULT now()
-}
-```
-
-### Conversations Table
-```sql
-conversations {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id: uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE
-  title: varchar(255) NOT NULL
-  is_pinned: boolean DEFAULT false
-  model: varchar(50) DEFAULT 'gpt-3.5-turbo'
-  system_prompt: text
-  temperature: decimal(3,2) DEFAULT 0.7
-  created_at: timestamp DEFAULT now()
-  updated_at: timestamp DEFAULT now()
-  
-  INDEX idx_user_conversations (user_id, created_at DESC)
-  INDEX idx_pinned_conversations (user_id, is_pinned, updated_at DESC)
-}
-```
-
-### Messages Table
-```sql
-messages {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  conversation_id: uuid NOT NULL REFERENCES conversations(id) ON DELETE CASCADE
-  role: varchar(20) NOT NULL -- 'user', 'assistant', 'system'
-  content: text NOT NULL
-  tokens_used: integer
-  model: varchar(50) -- specific model used for this response
-  created_at: timestamp DEFAULT now()
-  
-  INDEX idx_conversation_messages (conversation_id, created_at ASC)
-}
-```
-
-### User Preferences Table
-```sql
-user_preferences {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id: uuid UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE
-  theme: varchar(20) DEFAULT 'light' -- 'light', 'dark', 'system'
-  default_model: varchar(50) DEFAULT 'gpt-3.5-turbo'
-  default_temperature: decimal(3,2) DEFAULT 0.7
-  default_system_prompt: text
-  sidebar_collapsed: boolean DEFAULT false
-  created_at: timestamp DEFAULT now()
-  updated_at: timestamp DEFAULT now()
-}
-```
-
-### API Keys Table (Optional - for user's own keys)
-```sql
-api_keys {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id: uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE
-  provider: varchar(50) NOT NULL -- 'openai', 'anthropic', etc.
-  encrypted_key: text NOT NULL
-  is_active: boolean DEFAULT true
-  created_at: timestamp DEFAULT now()
-  updated_at: timestamp DEFAULT now()
-  
-  INDEX idx_user_api_keys (user_id, provider)
-}
-```
-
-### Usage Tracking Table (Optional)
-```sql
-usage_tracking {
-  id: uuid PRIMARY KEY DEFAULT gen_random_uuid()
-  user_id: uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE
-  conversation_id: uuid REFERENCES conversations(id) ON DELETE SET NULL
-  model: varchar(50) NOT NULL
-  prompt_tokens: integer NOT NULL
-  completion_tokens: integer NOT NULL
-  total_tokens: integer NOT NULL
-  cost: decimal(10,6) -- estimated cost in USD
-  created_at: timestamp DEFAULT now()
-  
-  INDEX idx_user_usage (user_id, created_at DESC)
-  INDEX idx_monthly_usage (user_id, date_trunc('month', created_at))
-}
-```
+- **Next.js App Router:** Will be used for all routing. The chat history sidebar will be a Server Component (`layout.tsx`) fetching data via Drizzle. The main chat interface (`/chat/[id]/page.tsx`) will be a Client Component using the `useChat` hook.
+- **Better Auth:** Will handle session management. We will use its server-side helpers to get the `userId` in Server Components and API Routes to query the database.
+- **Vercel AI SDK:** The `useChat` hook will manage the client-side state (messages, input, loading status). A Next.js API Route (`/api/chat`) will use the `StreamingTextResponse` to stream the AI's output.
+- **Drizzle + Neon:** Drizzle will define the schema (see section 5) and be used in Server Actions/API Routes to query the Neon database. It will handle saving messages and fetching chat history.
 
 ---
 
-## API Routes Structure
+## **4. User Flow**
 
-### Authentication Routes
-- `POST /api/auth/register` - User registration
-- `POST /api/auth/login` - User login
-- `POST /api/auth/logout` - User logout
-- `GET /api/auth/session` - Get current session
-- `POST /api/auth/reset-password` - Password reset request
-- `POST /api/auth/oauth/[provider]` - OAuth authentication
+### **4.1. Authentication Flow**
 
-### Chat Routes
-- `POST /api/chat` - Send message and stream response
-- `POST /api/chat/regenerate` - Regenerate last response
+1.  `User` navigates to the homepage (`/`).
+2.  `System` checks for an active session (via Better Auth).
+3.  If no session, `System` redirects `User` to the Better Auth sign-in/sign-up page.
+4.  `User` authenticates.
+5.  `System` (Better Auth) redirects `User` back to the app, now authenticated.
+6.  `User` is redirected to the main chat dashboard (`/chat`).
 
-### Conversation Routes
-- `GET /api/conversations` - List all conversations
-- `POST /api/conversations` - Create new conversation
-- `GET /api/conversations/[id]` - Get conversation with messages
-- `PATCH /api/conversations/[id]` - Update conversation (rename, pin)
-- `DELETE /api/conversations/[id]` - Delete conversation
+### **4.2. New Chat & Conversation Flow**
 
-### User Routes
-- `GET /api/user/profile` - Get user profile
-- `PATCH /api/user/profile` - Update user profile
-- `GET /api/user/preferences` - Get user preferences
-- `PATCH /api/user/preferences` - Update preferences
-- `GET /api/user/usage` - Get usage statistics
+1.  `User` (on `/chat`) sees an empty state and a persistent sidebar.
+2.  `User` types their first prompt (e.g., "What is Next.js?") and hits "Send".
+3.  `Client` (Vercel `useChat` hook) optimistically displays the user's message.
+4.  `Client` sends a POST request to `/api/chat` with the message history.
+5.  `Server` (`/api/chat` route):
+    a. Gets the `userId` from Better Auth.
+    b. **[First Message Logic]** Sees no `chatId` is provided.
+    c. Creates a new `Chat` record in the database (Drizzle) linked to the `userId`, using the prompt to generate a `title`.
+    d. Saves the `User` message to the `Message` table, linked to the new `chatId`.
+    e. Forwards the prompt to the LLM.
+6.  `Server` streams the LLM response back to the client using `StreamingTextResponse`.
+7.  `Client` (`useChat` hook) displays the streaming response in real-time.
+8.  `Server` (on stream completion, via `onFinish` callback) saves the full `Assistant` response to the `Message` table.
+9.  `Client` sidebar automatically updates (via re-fetch or state update) to show the new chat title.
+
+### **4.3. Accessing Existing Chat Flow**
+
+1.  `User` logs in and lands on `/chat`.
+2.  `Server Component` (Sidebar) fetches all `Chat` records for the `userId` from Neon via Drizzle.
+3.  `User` sees their chat history (e.g., "What is Next.js?") in the sidebar and clicks it.
+4.  `Client` navigates to `/chat/[id]` (e.g., `/chat/uuid-1234-abcd`).
+5.  `Server` (on the `page.tsx` for `[id]`) fetches all `Message` records for that `chatId`.
+6.  `Server` passes these historical messages as `initialMessages` to the `useChat` hook.
+7.  `Client` interface loads, displaying the full conversation history.
+8.  `User` can now continue this conversation, and new messages will be saved to the _same_ `chatId`.
 
 ---
 
-## Key Implementation Details
+## **5. Database Schema (Drizzle ORM for Neon)**
 
-### AI SDK Integration
+This schema defines three main tables: `User`, `Chat`, and `Message`, along with a supporting `enum`.
+
 ```typescript
-// Using Vercel AI SDK for streaming responses
-import { OpenAIStream, StreamingTextResponse } from 'ai'
+import { pgTable, text, timestamp, uuid, pgEnum } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
-// Server action or API route
-const response = await openai.chat.completions.create({
-  model: 'gpt-3.5-turbo',
-  stream: true,
-  messages: conversationHistory,
-})
+/**
+ * ----------------------------------------
+ * ENUMS
+ * ----------------------------------------
+ */
 
-const stream = OpenAIStream(response)
-return new StreamingTextResponse(stream)
+// This enum is crucial for the AI model
+export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
+
+/**
+ * ----------------------------------------
+ * TABLES
+ * ----------------------------------------
+ */
+
+/**
+ * User Table
+ * Stores basic user info. The 'id' MUST match the 'sub' (subject) ID
+ * provided by Better Auth for session mapping.
+ */
+export const users = pgTable("users", {
+  id: text("id").primaryKey(), // ID from Better Auth
+  email: text("email").notNull().unique(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * Chat Table
+ * Represents a single conversation thread.
+ * Each user can have multiple chats.
+ */
+export const chats = pgTable("chats", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+/**
+ * Message Table
+ * Stores individual messages within a chat.
+ * Linked to a parent chat.
+ */
+export const messages = pgTable("messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  chatId: uuid("chat_id")
+    .notNull()
+    .references(() => chats.id, { onDelete: "cascade" }),
+  role: chatRoleEnum("role").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+/**
+ * ----------------------------------------
+ * RELATIONS (for Drizzle ORM)
+ * ----------------------------------------
+ */
+
+export const usersRelations = relations(users, ({ many }) => ({
+  // A user can have many chats
+  chats: many(chats),
+}));
+
+export const chatsRelations = relations(chats, ({ one, many }) => ({
+  // Each chat belongs to one user
+  user: one(users, {
+    fields: [chats.userId],
+    references: [users.id],
+  }),
+  // A chat can have many messages
+  messages: many(messages),
+}));
+
+export const messagesRelations = relations(messages, ({ one }) => ({
+  // Each message belongs to one chat
+  chat: one(chats, {
+    fields: [messages.chatId],
+    references: [chats.id],
+  }),
+}));
 ```
-
-### Real-time Message Updates
-- Use React Server Components for initial load
-- Implement optimistic updates for immediate feedback
-- Stream AI responses using Vercel AI SDK's `useChat` hook
-- WebSocket or Server-Sent Events for multi-device sync (optional)
-
-### Security Considerations
-- API keys stored encrypted in database
-- Rate limiting on API routes
-- Input sanitization and validation
-- CSRF protection via Better Auth
-- Row-level security with user_id checks
-- Secure session management
-
-### Performance Optimizations
-- Infinite scroll for conversation history
-- Lazy loading of messages
-- Debounced search
-- Cached conversation list
-- Optimistic UI updates
-- Edge runtime for API routes where possible
-
----
-
-## Project Structure
-
-```
-/app
-  /(auth)
-    /login/page.tsx
-    /register/page.tsx
-  /(dashboard)
-    /page.tsx (main chat interface)
-    /c/[id]/page.tsx (specific conversation)
-    /settings/page.tsx
-  /api
-    /auth/[...auth]/route.ts
-    /chat/route.ts
-    /conversations/route.ts
-    /conversations/[id]/route.ts
-    /user/route.ts
-/components
-  /chat
-    /ChatInterface.tsx
-    /MessageList.tsx
-    /MessageInput.tsx
-    /Message.tsx
-  /sidebar
-    /Sidebar.tsx
-    /ConversationList.tsx
-    /ConversationItem.tsx
-  /ui (shadcn/ui components)
-/lib
-  /db
-    /schema.ts (Drizzle schema)
-    /index.ts (database connection)
-  /auth
-    /config.ts (Better Auth config)
-  /ai
-    /client.ts (AI SDK setup)
-/hooks
-  /useChat.ts
-  /useConversations.ts
-/types
-  /index.ts
-```
-
----
-
-## Environment Variables
-
-```env
-# Database
-DATABASE_URL=postgresql://...
-
-# Better Auth
-AUTH_SECRET=your-secret-key
-AUTH_URL=http://localhost:3000
-
-# OAuth Providers (Optional)
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-
-# AI Provider
-OPENAI_API_KEY=sk-...
-
-# App
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
----
-
-## Development Phases
-
-### Phase 1: Foundation (Week 1-2)
-- Set up Next.js project with TypeScript
-- Configure Drizzle ORM with Neon
-- Implement Better Auth
-- Create database schema and migrations
-- Basic UI layout with Tailwind
-
-### Phase 2: Core Features (Week 3-4)
-- Build chat interface
-- Integrate Vercel AI SDK
-- Implement streaming responses
-- Create conversation management
-- Message persistence
-
-### Phase 3: Enhancement (Week 5-6)
-- Add conversation search
-- Implement user preferences
-- Add multiple model support
-- Usage tracking
-- Error handling and edge cases
-
-### Phase 4: Polish (Week 7-8)
-- UI/UX refinements
-- Performance optimizations
-- Mobile responsiveness
-- Testing and bug fixes
-- Documentation
-
----
-
-## Future Enhancements
-- File upload and analysis
-- Image generation integration
-- Voice input/output
-- Conversation sharing
-- Team/workspace features
-- Plugin system
-- Custom AI model fine-tuning
-- Export conversations
-- Multi-language support
