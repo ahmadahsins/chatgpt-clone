@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { MessageSquarePlus, MoreHorizontal, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ButtonLogout } from "@/components/button-logout";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function ChatLayout({
   children,
@@ -30,11 +31,7 @@ export default function ChatLayout({
         <Sidebar collapsible="icon" className="border-r">
           <SidebarHeader className="border-b p-4">
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-              >
+              <Button variant="ghost" size="icon" className="h-8 w-8">
                 <MessageSquarePlus className="h-5 w-5" />
               </Button>
             </div>
@@ -86,14 +83,15 @@ export default function ChatLayout({
           <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:px-6">
             <SidebarTrigger />
             <div className="flex-1">
-              <h1 className="text-lg font-semibold">ChatGPT Clone</h1>
+              <h1 className="text-lg font-semibold">ChatGPT</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
             </div>
           </header>
 
           {/* Main Chat Area */}
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-auto">{children}</main>
         </div>
       </div>
     </SidebarProvider>
