@@ -13,28 +13,32 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
 import { MessageSquarePlus, MoreHorizontal, LogOut } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ButtonLogout } from "@/components/button-logout";
 import { ThemeToggle } from "@/components/theme-toggle";
+import Image from "next/image";
+import { useTheme } from "next-themes";
 
 export default function ChatLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const { theme } = useTheme();
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
         {/* Sidebar */}
         <Sidebar collapsible="icon" className="border-r">
           <SidebarHeader className="border-b p-4">
-            <div className="flex items-center justify-between">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <MessageSquarePlus className="h-5 w-5" />
-              </Button>
-            </div>
+            <Image
+              src={theme === "dark" ? "/openai-dark.png" : "/openai-light.png"}
+              alt="Logo"
+              width={20}
+              height={20}
+            />
           </SidebarHeader>
 
           <SidebarContent>

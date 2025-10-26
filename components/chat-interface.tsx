@@ -1,10 +1,38 @@
 "use client";
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Send } from "lucide-react";
+import { GlobeIcon, MessageSquareIcon, Send } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useChat } from "@ai-sdk/react";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "./ai-elements/conversation";
+import { Message, MessageAvatar, MessageContent } from "./ai-elements/message";
+import { Response } from "./ai-elements/response";
+import {
+  PromptInput,
+  PromptInputActionAddAttachments,
+  PromptInputActionMenu,
+  PromptInputActionMenuContent,
+  PromptInputActionMenuTrigger,
+  PromptInputAttachment,
+  PromptInputAttachments,
+  PromptInputBody,
+  PromptInputButton,
+  type PromptInputMessage,
+  PromptInputModelSelect,
+  PromptInputModelSelectContent,
+  PromptInputModelSelectItem,
+  PromptInputModelSelectTrigger,
+  PromptInputModelSelectValue,
+  PromptInputSpeechButton,
+  PromptInputSubmit,
+  PromptInputTextarea,
+  PromptInputFooter,
+  PromptInputTools,
+} from "./ai-elements/prompt-input";
 
 interface Message {
   id: string;
@@ -13,107 +41,103 @@ interface Message {
 }
 
 export default function ChatInterface() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-
-  const handleSend = () => {
-    if (!input.trim()) return;
-
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-    };
-
-    setMessages([...messages, newMessage]);
-    setInput("");
-
-    // Simulate AI response
-    setTimeout(() => {
-      const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "This is a simulated response. Connect to your AI backend to get real responses.",
-      };
-      setMessages((prev) => [...prev, aiResponse]);
-    }, 1000);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  };
+  const { messages, sendMessage, status } = useChat();
 
   return (
     <div className="flex h-full flex-col">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center">
-            <div className="text-center">
-              <h2 className="text-2xl font-semibold mb-2">How can I help you today?</h2>
-              <p className="text-muted-foreground">Start a conversation by typing a message below</p>
-            </div>
-          </div>
-        ) : (
-          <div className="mx-auto max-w-3xl px-4 py-8">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`mb-8 flex gap-4 ${
-                  message.role === "user" ? "justify-end" : "justify-start"
-                }`}
-              >
-                {message.role === "assistant" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback className="bg-primary text-primary-foreground">
-                      AI
-                    </AvatarFallback>
-                  </Avatar>
-                )}
-                <div
-                  className={`rounded-lg px-4 py-3 max-w-[80%] ${
-                    message.role === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}
-                >
-                  <p className="whitespace-pre-wrap">{message.content}</p>
-                </div>
-                {message.role === "user" && (
-                  <Avatar className="h-8 w-8">
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <Conversation className="relative size-full" style={{ height: "498px" }}>
+        <ConversationContent>
+          {messages.length === 0 ? (
+            <ConversationEmptyState
+              icon={<MessageSquareIcon className="size-6" />}
+              title="Start a conversation"
+              description="Messages will appear here as the conversation progresses."
+            />
+          ) : (
+            messages.map((message, index) => (
+              <Message from={message.role} key={message.id}>
+                <MessageContent>
+                  {message.parts.map((part, i) => {
+                    switch (part.type) {
+                      case "text": // we don't use any reasoning or tool calls in this example
+                        return (
+                          <Response key={`${message.id}-${i}`}>
+                            {part.text}
+                          </Response>
+                        );
+                      default:
+                        return null;
+                    }
+                  })}
+                </MessageContent>
+                {/* <MessageAvatar name={message.role} src={message.role === "user" ? "" : ""} /> */}
+              </Message>
+            ))
+          )}
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       {/* Input Area */}
       <div className="border-t bg-background">
         <div className="mx-auto max-w-3xl px-4 py-4">
-          <div className="relative flex items-end gap-2">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Message ChatGPT..."
-              className="min-h-[60px] max-h-[200px] resize-none pr-12"
-              rows={1}
-            />
-            <Button
-              onClick={handleSend}
-              disabled={!input.trim()}
-              size="icon"
-              className="absolute bottom-2 right-2 h-8 w-8"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+          <PromptInput
+            onSubmit={(message, event) => {
+              event.preventDefault();
+              const text = (message.text ?? "").trim();
+              if (!text && !(message.files && message.files.length > 0)) return;
+              sendMessage({
+                text,
+                files: message.files,
+              });
+              event.currentTarget.reset();
+            }}
+            className="mt-4"
+            globalDrop
+            multiple
+          >
+            <PromptInputBody>
+              <PromptInputAttachments>
+                {(attachment) => <PromptInputAttachment data={attachment} />}
+              </PromptInputAttachments>
+              <PromptInputTextarea placeholder="Type a message..." />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <PromptInputTools>
+                <PromptInputActionMenu>
+                  <PromptInputActionMenuTrigger />
+                  <PromptInputActionMenuContent>
+                    <PromptInputActionAddAttachments />
+                  </PromptInputActionMenuContent>
+                </PromptInputActionMenu>
+                {/* <PromptInputSpeechButton
+                  onTranscriptionChange={setText}
+                  textareaRef={textareaRef}
+                /> */}
+                <PromptInputButton>
+                  <GlobeIcon size={16} />
+                  <span>Search</span>
+                </PromptInputButton>
+                {/* <PromptInputModelSelect onValueChange={setModel} value={model}>
+                  <PromptInputModelSelectTrigger>
+                    <PromptInputModelSelectValue />
+                  </PromptInputModelSelectTrigger>
+                  <PromptInputModelSelectContent>
+                    {models.map((modelOption) => (
+                      <PromptInputModelSelectItem
+                        key={modelOption.id}
+                        value={modelOption.id}
+                      >
+                        {modelOption.name}
+                      </PromptInputModelSelectItem>
+                    ))}
+                  </PromptInputModelSelectContent>
+                </PromptInputModelSelect> */}
+              </PromptInputTools>
+              <PromptInputSubmit className="h-8!" status={status} />
+            </PromptInputFooter>
+          </PromptInput>
           <p className="mt-2 text-xs text-center text-muted-foreground">
             ChatGPT can make mistakes. Check important info.
           </p>
