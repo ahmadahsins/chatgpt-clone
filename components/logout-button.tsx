@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 import { redirect } from "next/navigation";
 
-export function ButtonLogout() {
+export function LogoutButton() {
   const handleLogout = () => {
     authClient.signOut({});
     redirect("/login");
