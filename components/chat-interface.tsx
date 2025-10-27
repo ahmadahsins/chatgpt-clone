@@ -1,16 +1,17 @@
 "use client";
 
-import { GlobeIcon, MessageSquareIcon, Send } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useChat } from "@ai-sdk/react";
+import { DefaultChatTransport } from "ai";
+import { GlobeIcon, MessageSquareIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
 } from "./ai-elements/conversation";
-import { Message, MessageAvatar, MessageContent } from "./ai-elements/message";
-import { Response } from "./ai-elements/response";
+import { Message, MessageContent } from "./ai-elements/message";
 import {
   PromptInput,
   PromptInputActionAddAttachments,
@@ -21,21 +22,20 @@ import {
   PromptInputAttachments,
   PromptInputBody,
   PromptInputButton,
-  type PromptInputMessage,
-  PromptInputModelSelect,
-  PromptInputModelSelectContent,
-  PromptInputModelSelectItem,
-  PromptInputModelSelectTrigger,
-  PromptInputModelSelectValue,
-  PromptInputSpeechButton,
+  PromptInputFooter,
+  // type PromptInputMessage,
+  // PromptInputModelSelect,
+  // PromptInputModelSelectContent,
+  // PromptInputModelSelectItem,
+  // PromptInputModelSelectTrigger,
+  // PromptInputModelSelectValue,
+  // PromptInputSpeechButton,
   PromptInputSubmit,
   PromptInputTextarea,
-  PromptInputFooter,
   PromptInputTools,
 } from "./ai-elements/prompt-input";
-import { DefaultChatTransport } from "ai";
-import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { Response } from "./ai-elements/response";
+import { Shimmer } from "./ai-elements/shimmer";
 
 interface Message {
   id: string;
@@ -74,7 +74,7 @@ export default function ChatInterface({
           router.push(`/chat/${metadata.chatId}`);
         }
       }
-      
+
       // Refresh sidebar to show updated chat list
       router.refresh();
     },
@@ -99,25 +99,36 @@ export default function ChatInterface({
               description="Messages will appear here as the conversation progresses."
             />
           ) : (
-            messages.map((message, index) => (
-              <Message from={message.role} key={message.id}>
-                <MessageContent>
-                  {message.parts.map((part, i) => {
-                    switch (part.type) {
-                      case "text": // we don't use any reasoning or tool calls in this example
-                        return (
-                          <Response key={`${message.id}-${i}`}>
-                            {part.text}
-                          </Response>
-                        );
-                      default:
-                        return null;
-                    }
-                  })}
-                </MessageContent>
-                {/* <MessageAvatar name={message.role} src={message.role === "user" ? "" : ""} /> */}
-              </Message>
-            ))
+            <>
+              {(status === "submitted" || status === "streaming") && (
+                <Message from="assistant">
+                  <MessageContent>
+                    <div className="flex items-center gap-2">
+                      <Shimmer duration={1}>Thinking...</Shimmer>
+                    </div>
+                  </MessageContent>
+                </Message>
+              )}
+              {messages.map((message, index) => (
+                <Message from={message.role} key={message.id}>
+                  <MessageContent>
+                    {message.parts.map((part, i) => {
+                      switch (part.type) {
+                        case "text": // we don't use any reasoning or tool calls in this example
+                          return (
+                            <Response key={`${message.id}-${i}`}>
+                              {part.text}
+                            </Response>
+                          );
+                        default:
+                          return null;
+                      }
+                    })}
+                  </MessageContent>
+                  {/* <MessageAvatar name={message.role} src={message.role === "user" ? "" : ""} /> */}
+                </Message>
+              ))}
+            </>
           )}
         </ConversationContent>
         <ConversationScrollButton />
