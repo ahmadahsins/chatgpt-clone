@@ -1,4 +1,9 @@
-import { convertToModelMessages, streamText, UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  generateText,
+  streamText,
+  UIMessage,
+} from "ai";
 import { google } from "@ai-sdk/google";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -28,11 +33,25 @@ export async function POST(req: Request) {
     if (!currentChatId && uiMessages.length > 0) {
       // Generate chat title
       const firstMessage = uiMessages[0];
-      const title = firstMessage.parts
+      const userPrompt = firstMessage.parts
         .filter((part) => part.type === "text")
         .map((part) => part.text)
-        .join(" ")
-        .slice(0, 100);
+        .join(" ");
+
+      let title = userPrompt.slice(0, 100);
+
+      try {
+        const { text: generatedTitle } = await generateText({
+          model: google("gemini-2.5-flash"),
+          prompt: `Generate a short, descriptive title (max 6 words) for a chat that starts with this message: "${userPrompt}". Only return the title, nothing else and make sure the title using language based on language used in the message!`,
+        });
+
+        if (generatedTitle && generatedTitle.trim().length > 0) {
+          title = generatedTitle.trim();
+        }
+      } catch (error) {
+        console.error("[Title Generation] Error:", error);
+      }
 
       const [newChat] = await db
         .insert(chats)
