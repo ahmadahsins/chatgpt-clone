@@ -33,6 +33,9 @@ import {
   PromptInputFooter,
   PromptInputTools,
 } from "./ai-elements/prompt-input";
+import { DefaultChatTransport } from "ai";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 interface Message {
   id: string;
@@ -40,8 +43,49 @@ interface Message {
   content: string;
 }
 
-export default function ChatInterface() {
-  const { messages, sendMessage, status } = useChat();
+interface ChatInterfaceProps {
+  chatId?: string;
+  initialMessages?: any[];
+}
+
+export default function ChatInterface({
+  chatId,
+  initialMessages = [],
+}: ChatInterfaceProps = {}) {
+  const router = useRouter();
+  const [currentChatId, setCurrentChatId] = useState(chatId);
+  const hasNavigated = useRef(false);
+
+  const { messages, sendMessage, status, setMessages } = useChat({
+    transport: new DefaultChatTransport({
+      api: "/api/chat",
+      body: () => ({
+        chatId: currentChatId || null,
+      }),
+    }),
+    onFinish: ({ message }) => {
+      // Extract chat ID from message metadata (sent by server on first message)
+      if (message.metadata && typeof message.metadata === "object") {
+        const metadata = message.metadata as any;
+        if (metadata.chatId && !currentChatId && !hasNavigated.current) {
+          hasNavigated.current = true;
+          setCurrentChatId(metadata.chatId);
+          // Navigate to the new chat URL
+          router.push(`/chat/${metadata.chatId}`);
+        }
+      }
+      
+      // Refresh sidebar to show updated chat list
+      router.refresh();
+    },
+  });
+
+  // Initialize messages from server on mount (for existing chats)
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    }
+  }, [initialMessages, setMessages]);
 
   return (
     <div className="flex h-full flex-col">

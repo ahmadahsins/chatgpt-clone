@@ -4,95 +4,202 @@ This document details the development workflow and recommended task list for bui
 
 ---
 
-### **Phase 0: Project Setup & Foundation**
+### **Phase 0: Project Setup & Foundation** COMPLETED
 
 **Goal:** To set up the project boilerplate, configure the database, and implement the basic authentication flow.
 
 **Task List:**
 
 1.  **Initialize Next.js Project:**
-    - `npx create-next-app@latest`
-    - Select: App Router, TypeScript, TailwindCSS.
+
+    - Next.js 15 with App Router, TypeScript, TailwindCSS
+
 2.  **Install Main Dependencies:**
-    - `npm install drizzle-orm @neondatabase/serverless`
-    - `npm install -D drizzle-kit`
-    - `npm install @better-auth/nextjs`
-    - `npm install ai @ai-sdk/react`
+
+    - Drizzle ORM + Neon Database
+    - Better Auth for authentication
+    - AI SDK (`ai`, `@ai-sdk/react`, `@ai-sdk/google`)
+
 3.  **Configure Neon Database & Drizzle:**
-    - Create a new project in Neon and get the connection string (save in `.env`).
-    - Create a `drizzle.config.ts` file for Drizzle Kit.
-    - Create `src/lib/db/schema.ts` and define the `users`, `chats`, and `messages` schemas (as per the Tech Spec).
-    - Run the first migration: `npx drizzle-kit push:pg` to create the tables in Neon.
+
+    - Database schema: `users`, `sessions`, `accounts`, `chats`, `messages`
+    - Drizzle config with Neon serverless driver
+    - Migrations applied
+
 4.  **Implement Better Auth:**
-    - Create the dynamic API route: `src/app/api/auth/[...betterauth]/route.ts`.
-    - Configure the Auth Provider in `layout.tsx` or a separate provider file.
-    - Get your Better Auth API keys and save them in `.env`.
+
+    - API route: `/api/auth/[...all]/route.ts`
+    - Auth configuration with Google OAuth
+    - Session management
+
 5.  **Create Protected Routes:**
-    - Create a `middleware.ts` file in the project root.
-    - Configure the middleware to protect all routes under `/chat`. Unauthenticated users will be redirected to the Better Auth login page.
+
+    - Middleware protects `/chat/*` routes
+    - Redirect unauthenticated users to sign-in
+
 6.  **Create Basic Layout Structure:**
-    - Create `src/app/chat/layout.tsx` (to hold the sidebar) and `src/app/chat/page.tsx` (for the main chat page).
+
+    - Chat layout with sidebar
+    - Main chat page at `/chat`
 
 ---
 
-### **Phase 1: Core Chat Functionality (In-Memory Streaming)**
+### **Phase 1: Core Chat Functionality (In-Memory Streaming)** COMPLETED
 
 **Goal:** To get a fully functional chat interface working with streaming AI responses, without saving history to the database.
 
 **Task List:**
 
 1.  **Create API Route for AI SDK:**
-    - Create the file `src/app/api/chat/route.ts`.
-    - Configure this route to receive `messages` from the Vercel AI SDK.
-    - Store your `OPENAI_API_KEY` (or other LLM key) in `.env`.
-    - Use `StreamingTextResponse` to send the LLM's response back to the client.
+
+    - API route at `/api/chat/route.ts`
+    - Streaming AI responses with `streamText()` and `toUIMessageStreamResponse()`
+    - Using Google Gemini 2.5 Flash model
+
 2.  **Create Chat Interface Component:**
-    - Create a client component `ChatInterface.tsx` (or build directly in `src/app/chat/page.tsx`).
-    - Implement the `useChat` hook from `ai/react`.
-3.  **Design Simple Chat UI (Tailwind):**
-    - Create a `<form onSubmit={handleSubmit}>` with an `<input value={input} onChange={handleInputChange}>` and a send button.
-    - Render `messages.map(...)` to display the list of messages.
-    - Add basic styling to differentiate `user` and `assistant` messages.
+
+    - Client component `ChatInterface.tsx` with `useChat` hook
+    - AI Elements UI components for modern chat interface
+
+3.  **Design Chat UI:**
+
+    - Message rendering with `message.parts` structure
+    - Input form with file attachments support
+    - Streaming status indicators
+
 4.  **Test Streaming:**
-    - Run the project and ensure you can send a message, receive a streaming response from the AI, and continue the conversation (state is still client-side).
+
+    - Real-time AI responses working
+    - Client-side state management functional
 
 ---
 
-### **Phase 2: Database Integration & Chat Persistence**
+### **Phase 2: Database Integration & Chat Persistence** COMPLETED
 
 **Goal:** To save conversations to the Neon database and allow users to load their previous chat histories.
 
 **Task List:**
 
 1.  **Create Chat History Sidebar:**
-    - Create a Server Component (`ChatHistorySidebar.tsx`) inside `src/app/chat/layout.tsx`.
-    - Use the Better Auth helper to get the `userId` on the server.
-    - Fetch (using Drizzle) all `chats` owned by that `userId`.
-    - Render the list of chats as `<Link href={'/chat/${chat.id}'}>`.
-    - Add a "New Chat" button that links to `/chat`.
+
+    - Server Component (`ChatHistorySidebar.tsx`) fetches user's chats
+    - Client Component (`ChatSidebar.tsx`) for UI interactions
+    - New Chat button navigates to `/chat`
+    - Chat list with links to `/chat/[id]`
+
 2.  **Create Dynamic Chat Route:**
-    - Create the dynamic route `src/app/chat/[chatId]/page.tsx`.
-    - On this page, fetch (Drizzle) all `messages` associated with the `chatId` from the URL parameters.
-    - Ensure only the chat owner can access it (validate `userId`).
-3.  **Connect `useChat` with Database:**
-    - Modify the `ChatInterface.tsx` component to accept `initialMessages` and `chatId` as props.
-    - Initialize the hook: `useChat({ id: chatId, initialMessages })`.
-4.  **Modify the `/api/chat` API Route:**
-    - Inside `route.ts`, get the `userId` from Better Auth.
-    - Get `messages` and the optional `chatId` from the request body.
-    - Save the user's last message (`userMessage`) to the `messages` table.
-    - **New Chat Logic:** If `chatId` is missing (it's the first message of a new chat):
-      - Create a new `chats` record in the database (generate a title, link the `userId`).
-      - Use this `newChatId` to save the `userMessage`.
-      - **IMPORTANT:** Send the `newChatId` back to the client via a custom header (e.g., `x-chat-id`).
-    - **Existing Chat Logic:** If `chatId` exists, save the `userMessage` to that `chatId`.
-    - Call the LLM with the message history.
-    - Use the `onFinish` _server-side callback_ from `StreamingTextResponse` to save the full _assistant_ response to the `messages` table.
-5.  **Client-side Navigation:**
-    - In `ChatInterface.tsx` (client), use the `onResponse` callback from `useChat`.
-    - Check the header: `const newChatId = res.headers.get('x-chat-id')`.
-    - If `newChatId` exists, use `router.push('/chat/' + newChatId)` from `next/navigation` to redirect the user to the new chat URL.
-    - Use the client-side `onFinish` to call `router.refresh()` so the layout (including the sidebar) fetches the new data.
+
+    - Dynamic route `app/chat/[id]/page.tsx`
+    - Server action `getChatMessages()` fetches messages
+    - Security: validates user owns the chat
+    - Passes messages to `ChatInterface`
+
+3.  **Configure `useChat` Hook (AI SDK):**
+
+    **Business Logic:**
+
+    - Use `DefaultChatTransport` to configure API endpoint and request body
+    - Pass `chatId` in request body (null for new chats, ID for existing chats)
+    - Use `onFinish` callback to handle post-message actions (navigation, refresh)
+    - Track navigation state with `useRef` to prevent duplicate redirects
+
+    **Key Concepts:**
+
+    - `sendMessage({ text })` - Send user messages (replaces old `append` method)
+    - `message.parts` - Access message content (replaces old `message.content`)
+    - `setMessages()` - Initialize or modify messages array
+    - `status` - Track loading state ('ready', 'streaming', 'error')
+
+4.  **Create `/api/chat` API Route:**
+
+    **Business Logic Flow:**
+
+5.  **Authentication:** Verify user session with Better Auth
+6.  **Parse Request:** Extract `messages` (UIMessage[]) and `chatId` from request body
+7.  **New Chat Creation:**
+    - If `chatId` is null → create new chat in database
+    - Generate title from first message (max 100 chars)
+    - Store `userId` and `title` in `chats` table
+8.  **Save User Message:** Insert last message to `messages` table with `chatId`
+9.  **Stream AI Response:**
+    - Use `streamText()` with Google Gemini model
+    - Convert UIMessages to model format with `convertToModelMessages()`
+    - Use `onFinish` callback to save assistant response to database
+10. **Return Stream with Metadata:**
+
+    - Use `toUIMessageStreamResponse()` to return streaming response
+    - Add `messageMetadata` callback to send `chatId` to client
+    - Set `X-Chat-ID` header for backward compatibility
+
+    **Key Points:**
+
+    - `UIMessage` has `parts` array structure (not `content` string)
+    - Extract text from parts: `parts.filter(p => p.type === 'text').map(p => p.text)`
+    - Use `messageMetadata` to send custom data (e.g., chatId) to client
+
+11. **Client-side Chat ID Handling & Navigation:**
+
+    **Business Logic:**
+
+    **Problem:** When user creates new chat, they start at `/chat` (no ID). After first message, we need to navigate to `/chat/[id]`.
+
+    **Solution:**
+
+12. **Track Chat ID State:**
+
+    - Use `useState` to track current chat ID
+    - Initialize with `chatId` prop (undefined for new chats)
+
+13. **Extract Chat ID from Metadata:**
+
+    - Server sends `chatId` via `messageMetadata` callback
+    - Client receives it in `onFinish({ message })` callback
+    - Access via `message.metadata.chatId`
+
+14. **Navigate to New Chat:**
+
+    - Check if `metadata.chatId` exists AND `currentChatId` is null
+    - Use `useRef` flag to prevent duplicate navigation
+    - Call `router.push(/chat/${chatId})` to update URL
+    - Call `router.refresh()` to update sidebar with new chat
+
+    **Key Points:**
+
+    - `messageMetadata` on server → `message.metadata` on client
+    - Use `useRef` to track navigation state (prevents multiple redirects)
+    - Always call `router.refresh()` after mutations to update server components
+
+15. **Load Initial Messages for Existing Chats:**
+
+    **Business Logic:**
+
+    **Problem:** When user opens existing chat (`/chat/[id]`), we need to load previous messages from database.
+
+    **Solution:**
+
+16. **Server-Side (Page Component):**
+
+    - Fetch messages from database using `getChatMessages(chatId, userId)`
+    - Validate user owns the chat (security check)
+    - Convert database format to UIMessage format:
+      - Database: `{ id, role, content }` (content is string)
+      - UIMessage: `{ id, role, parts: [{ type: 'text', text: content }] }`
+    - Pass `initialMessages` as prop to `ChatInterface`
+
+17. **Client-Side (ChatInterface):**
+
+    - Receive `initialMessages` prop from server
+    - Use `useEffect` to initialize messages on mount
+    - Call `setMessages(initialMessages)` to populate chat history
+    - Dependency array `[initialMessages, setMessages]` ensures it runs only once
+
+    **Key Points:**
+
+    - **Database → UIMessage conversion is critical:**
+      - Must convert `content` string to `parts` array
+      - Each part needs `type` field ('text', 'tool-call', etc.)
+    - **`setMessages()` is the official API** for initializing messages in AI SDK
+    - **Security:** Always validate `userId` matches chat owner before returning messages
 
 ---
 

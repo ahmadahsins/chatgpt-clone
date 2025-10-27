@@ -2,9 +2,9 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { chats } from "@/lib/db/schema";
+import { chats, messages } from "@/lib/db/schema";
 import { headers } from "next/headers";
-import { desc, eq } from "drizzle-orm";
+import { asc, desc, eq } from "drizzle-orm";
 
 export async function getUserChats() {
   const session = await auth.api.getSession({
@@ -27,4 +27,22 @@ export async function getUserChats() {
     .orderBy(desc(chats.updatedAt));
 
   return userChats;
+}
+
+export async function getChatMessages(chatId: string, userId: string) {
+  const chat = (
+    await db.select().from(chats).where(eq(chats.id, chatId)).limit(1)
+  )[0];
+
+  if (!chat || chat.userId !== userId) {
+    return null;
+  }
+
+  const chatMessages = await db
+    .select()
+    .from(messages)
+    .where(eq(messages.chatId, chatId))
+    .orderBy(asc(messages.createdAt));
+
+  return chatMessages;
 }

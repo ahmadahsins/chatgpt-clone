@@ -25,7 +25,6 @@ export async function ChatHistorySidebar() {
               <SidebarMenuItem key={chat.id}>
                 <SidebarMenuButton asChild>
                   <Link href={`/chat/${chat.id}`}>
-                    <MessageSquare className="h-4 w-4" />
                     <span className="truncate">{chat.title}</span>
                   </Link>
                 </SidebarMenuButton>
