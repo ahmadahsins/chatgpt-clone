@@ -2,16 +2,38 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { chats, messages } from "@/lib/db/schema";
+import { chats, messages, session } from "@/lib/db/schema";
 import { headers } from "next/headers";
 import { asc, desc, eq } from "drizzle-orm";
 
-export async function getUserChats() {
+const verifySession = async () => {
   const session = await auth.api.getSession({
     headers: await headers(),
   });
 
   if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  return session.user.id;
+};
+
+const verifyChatOwnership = async (chatId: string, userId: string) => {
+  const chat = await db
+    .select()
+    .from(chats)
+    .where(eq(chats.id, chatId))
+    .limit(1);
+
+  if (!chat[0] || chat[0].userId !== userId) {
+    throw new Error("Unauthorized");
+  }
+};
+
+export async function getUserChats() {
+  const userId = await verifySession();
+
+  if (!userId) {
     return [];
   }
 
@@ -24,7 +46,7 @@ export async function getUserChats() {
       userId: chats.userId,
     })
     .from(chats)
-    .where(eq(chats.userId, session.user.id))
+    .where(eq(chats.userId, userId))
     .orderBy(desc(chats.updatedAt));
 
   return userChats;
@@ -49,16 +71,20 @@ export async function getChatMessages(chatId: string, userId: string) {
 }
 
 export async function renameChatTitle(chatId: string, newTitle: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const userId = await verifySession();
 
-  if (!session?.user?.id) {
-    throw new Error("Unauthorized");
-  }
+  await verifyChatOwnership(chatId, userId);
 
   await db
     .update(chats)
     .set({ title: newTitle.trim() })
     .where(eq(chats.id, chatId));
+}
+
+export async function deleteChat(chatId: string) {
+  const userId = await verifySession();
+
+  await verifyChatOwnership(chatId, userId);
+
+  await db.delete(chats).where(eq(chats.id, chatId));
 }

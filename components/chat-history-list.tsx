@@ -15,21 +15,10 @@ import {
 } from "@/components/ui/sidebar";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
-import { Button } from "./ui/button";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "./ui/dialog";
-import { Label } from "./ui/label";
-import { Input } from "./ui/input";
 import { useState } from "react";
-import { renameChatTitle } from "@/server/chat-actions";
-import { useRouter } from "next/navigation";
+import { DeleteChatDialog } from "./delete-chat-dialog";
+import { RenameChatDialog } from "./rename-chat-dialog";
+import { Button } from "./ui/button";
 
 interface Chat {
   id: string;
@@ -45,7 +34,6 @@ interface ChatHistoryListProps {
 
 // Client Component - Handle interactivity
 export function ChatHistoryList({ chats }: ChatHistoryListProps) {
-  const router = useRouter();
   const [renameDialog, setRenameDialog] = useState<{
     open: boolean;
     chatId: string;
@@ -54,6 +42,11 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
     open: false,
     chatId: "",
     currentTitle: "",
+  });
+  const [deleteDialog, setDeleteDialog] = useState({
+    open: false,
+    chatId: "",
+    title: "",
   });
 
   return (
@@ -99,13 +92,16 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
                         }}
                         className="cursor-pointer"
                       >
-                        <Pencil className="mr-2 h-4 w-4" />
+                        <Pencil className="mr-1 h-4 w-4" />
                         Rename
                       </DropdownMenuItem>
                       <DropdownMenuItem
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // TODO: Open delete dialog
+                        onSelect={() => {
+                          setDeleteDialog({
+                            open: true,
+                            chatId: chat.id,
+                            title: chat.title,
+                          });
                         }}
                         className="text-destructive hover:bg-destructive hover:text-white"
                       >
@@ -121,56 +117,19 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
         </SidebarMenu>
       </SidebarGroupContent>
 
-      <Dialog
+      <RenameChatDialog
+        chatId={renameDialog.chatId}
+        currentTitle={renameDialog.currentTitle}
         open={renameDialog.open}
         onOpenChange={(open) => setRenameDialog({ ...renameDialog, open })}
-      >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle className="hidden"></DialogTitle>
-          </DialogHeader>
-          <form>
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="title">New name</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  defaultValue={renameDialog.currentTitle}
-                  placeholder="Enter new name"
-                  autoFocus
-                  onChange={(e) =>
-                    setRenameDialog({
-                      ...renameDialog,
-                      currentTitle: e.target.value,
-                    })
-                  }
-                />
-              </div>
-            </div>
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button
-                type="button"
-                onClick={() => {
-                  renameChatTitle(
-                    renameDialog.chatId,
-                    renameDialog.currentTitle
-                  );
-                  setRenameDialog({ ...renameDialog, open: false });
-                  router.refresh();
-                }}
-              >
-                Rename
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      />
+
+      <DeleteChatDialog
+        chatId={deleteDialog.chatId}
+        chatTitle={deleteDialog.title}
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ ...deleteDialog, open })}
+      />
     </SidebarGroup>
   );
 }
