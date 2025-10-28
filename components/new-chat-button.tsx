@@ -12,8 +12,8 @@ export function NewChatButton() {
   return (
     <SidebarMenuButton asChild isActive={isNewChat}>
       <Link href="/chat">
-        <Edit className="h-5 w-5" />
-        <span>New Chat</span>
+        <Edit className="h-4 w-4" />
+        <span className="text-xs">New Chat</span>
       </Link>
     </SidebarMenuButton>
   );

@@ -21,6 +21,7 @@ export async function getUserChats() {
       title: chats.title,
       createdAt: chats.createdAt,
       updatedAt: chats.updatedAt,
+      userId: chats.userId,
     })
     .from(chats)
     .where(eq(chats.userId, session.user.id))
@@ -45,4 +46,19 @@ export async function getChatMessages(chatId: string, userId: string) {
     .orderBy(asc(messages.createdAt));
 
   return chatMessages;
+}
+
+export async function renameChatTitle(chatId: string, newTitle: string) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  await db
+    .update(chats)
+    .set({ title: newTitle.trim() })
+    .where(eq(chats.id, chatId));
 }

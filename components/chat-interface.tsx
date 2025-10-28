@@ -89,50 +89,56 @@ export default function ChatInterface({
 
   return (
     <div className="flex h-full flex-col">
-      {/* Messages Area */}
-      <Conversation className="relative size-full" style={{ height: "498px" }}>
-        <ConversationContent>
-          {messages.length === 0 ? (
-            <ConversationEmptyState
-              icon={<MessageSquareIcon className="size-6" />}
-              title="Start a conversation"
-              description="Messages will appear here as the conversation progresses."
-            />
-          ) : (
-            <>
-              {(status === "submitted" || status === "streaming") && (
-                <Message from="assistant">
-                  <MessageContent>
-                    <div className="flex items-center gap-2">
-                      <Shimmer duration={1}>Thinking...</Shimmer>
-                    </div>
-                  </MessageContent>
-                </Message>
-              )}
-              {messages.map((message, index) => (
-                <Message from={message.role} key={message.id}>
-                  <MessageContent>
-                    {message.parts.map((part, i) => {
-                      switch (part.type) {
-                        case "text": // we don't use any reasoning or tool calls in this example
-                          return (
-                            <Response key={`${message.id}-${i}`}>
-                              {part.text}
-                            </Response>
-                          );
-                        default:
-                          return null;
-                      }
-                    })}
-                  </MessageContent>
-                  {/* <MessageAvatar name={message.role} src={message.role === "user" ? "" : ""} /> */}
-                </Message>
-              ))}
-            </>
-          )}
-        </ConversationContent>
-        <ConversationScrollButton />
-      </Conversation>
+      {/* Messages Area - Scrollable container */}
+      <div className="flex-1 overflow-y-auto">
+        <Conversation
+          className="relative size-full max-w-3xl 2xl:max-w-4xl mx-auto overflow-visible"
+          style={{ height: "auto" }}
+        >
+          <ConversationContent className="overflow-visible">
+            {messages.length === 0 ? (
+              <ConversationEmptyState
+                icon={<MessageSquareIcon className="size-6" />}
+                title="Start a conversation"
+                description="Messages will appear here as the conversation progresses."
+              />
+            ) : (
+              <>
+                {(status === "submitted" || status === "streaming") && (
+                  <Message from="assistant">
+                    <MessageContent>
+                      <div className="flex items-center gap-2">
+                        <Shimmer duration={1}>Thinking...</Shimmer>
+                      </div>
+                    </MessageContent>
+                  </Message>
+                )}
+                {messages.map((message, index) => (
+                  <Message from={message.role} key={message.id}>
+                    <MessageContent
+                      className={message.role == "user" ? "max-w-md" : ""}
+                    >
+                      {message.parts.map((part, i) => {
+                        switch (part.type) {
+                          case "text": // we don't use any reasoning or tool calls in this example
+                            return (
+                              <Response key={`${message.id}-${i}`}>
+                                {part.text}
+                              </Response>
+                            );
+                          default:
+                            return null;
+                        }
+                      })}
+                    </MessageContent>
+                  </Message>
+                ))}
+              </>
+            )}
+          </ConversationContent>
+          <ConversationScrollButton />
+        </Conversation>
+      </div>
 
       {/* Input Area */}
       <div className="border-t bg-background">
