@@ -34,6 +34,13 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "./ai-elements/prompt-input";
+import {
+  Tool,
+  ToolContent,
+  ToolHeader,
+  ToolInput,
+  ToolOutput,
+} from "./ai-elements/tool";
 import { Response } from "./ai-elements/response";
 import { Shimmer } from "./ai-elements/shimmer";
 
@@ -120,11 +127,27 @@ export default function ChatInterface({
                     >
                       {message.parts.map((part, i) => {
                         switch (part.type) {
-                          case "text": // we don't use any reasoning or tool calls in this example
+                          case "text":
                             return (
                               <Response key={`${message.id}-${i}`}>
                                 {part.text}
                               </Response>
+                            );
+                          case "tool-getWeather":
+                            return (
+                              <Tool>
+                                <ToolHeader
+                                  type={part.type}
+                                  state={part.state}
+                                />
+                                <ToolContent>
+                                  <ToolInput input={part.input} />
+                                  <ToolOutput
+                                    errorText={part.errorText}
+                                    output={part.output}
+                                  />
+                                </ToolContent>
+                              </Tool>
                             );
                           default:
                             return null;

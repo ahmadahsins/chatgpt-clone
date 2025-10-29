@@ -1,15 +1,49 @@
 import {
   convertToModelMessages,
-  generateText,
+  stepCountIs,
   streamText,
+  tool,
   UIMessage,
 } from "ai";
 import { google } from "@ai-sdk/google";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { chats, messages } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import z from "zod";
+import { generateChatTitleAsync } from "@/lib/ai-sdk/title-generator";
 
 export const maxDuration = 30;
+
+const tools = {
+  getWeather: tool({
+    description: "Get the weather for a spesific location",
+    inputSchema: z.object({
+      city: z.string(),
+    }),
+    execute: async ({ city }) => {
+      const response = await fetch(
+        `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
+      );
+      const data = await response.json();
+      const weatherData = {
+        location: {
+          name: data.location.name,
+          country: data.location.country,
+          localtime: data.location.localtime,
+        },
+        current: {
+          temp_c: data.current.temp_c,
+          condition: {
+            text: data.current.condition.text,
+            code: data.current.condition.code,
+          },
+        },
+      };
+      return weatherData;
+    },
+  }),
+};
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({
@@ -38,30 +72,31 @@ export async function POST(req: Request) {
         .map((part) => part.text)
         .join(" ");
 
-      let title = userPrompt.slice(0, 100);
-
-      try {
-        const { text: generatedTitle } = await generateText({
-          model: google("gemini-2.5-flash"),
-          prompt: `Generate a short, descriptive title (max 6 words) for a chat that starts with this message: "${userPrompt}". Only return the title, nothing else and make sure the title using language based on language used in the message!`,
-        });
-
-        if (generatedTitle && generatedTitle.trim().length > 0) {
-          title = generatedTitle.trim();
-        }
-      } catch (error) {
-        console.error("[Title Generation] Error:", error);
-      }
+      // Use fallback title initially (instant chat creation)
+      const fallbackTitle = userPrompt.slice(0, 100);
 
       const [newChat] = await db
         .insert(chats)
         .values({
           userId: session.user.id,
-          title,
+          title: fallbackTitle,
         })
         .returning();
 
       currentChatId = newChat.id;
+
+      // Generate AI title asynchronously (non-blocking)
+      generateChatTitleAsync(
+        userPrompt,
+        async (generatedTitle) => {
+          // Update title in background
+          await db
+            .update(chats)
+            .set({ title: generatedTitle })
+            .where(eq(chats.id, currentChatId));
+        },
+        { maxRetries: 2, timeout: 8000 }
+      );
     }
 
     const lastMessage = uiMessages[uiMessages.length - 1];
@@ -85,6 +120,8 @@ export async function POST(req: Request) {
         },
         ...convertToModelMessages(uiMessages),
       ],
+      tools,
+      stopWhen: stepCountIs(2),
       onFinish: async ({ text }) => {
         await db.insert(messages).values({
           chatId: currentChatId,

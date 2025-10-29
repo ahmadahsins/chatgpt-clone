@@ -37,7 +37,7 @@ export default async function RootLayout({
         >
           {children}
         </ThemeProvider>
-        <Toaster />
+        <Toaster theme="dark" />
       </body>
     </html>
   );
