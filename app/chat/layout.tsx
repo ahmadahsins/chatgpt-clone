@@ -1,9 +1,10 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { ChatHistorySidebar } from "@/components/chat-history-sidebar";
+import { ChatHistoryList } from "@/components/chat-history-list";
 import { ChatSidebar } from "@/components/chat-sidebar";
-import { auth } from "@/lib/auth";
-import { headers } from "next/headers";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { auth } from "@/lib/auth";
+import { getUserChats } from "@/server/chat-actions";
+import { headers } from "next/headers";
 
 export default async function ChatLayout({
   children,
@@ -14,12 +15,15 @@ export default async function ChatLayout({
     headers: await headers(),
   });
 
+  const chats = await getUserChats();
+
   return (
     <SidebarProvider>
       <div className="flex h-screen w-full">
         {/* Sidebar - Client Component with Server Component as children */}
         <ChatSidebar
-          chatHistoryContent={<ChatHistorySidebar />}
+          chats={chats}
+          chatHistoryContent={<ChatHistoryList chats={chats} />}
           userEmail={session?.user?.email || "user@example.com"}
           userName={session?.user?.name || "User"}
           userImage={session?.user?.image || "user@example.com"}

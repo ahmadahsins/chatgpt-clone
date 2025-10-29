@@ -19,14 +19,7 @@ import { useState } from "react";
 import { DeleteChatDialog } from "./delete-chat-dialog";
 import { RenameChatDialog } from "./rename-chat-dialog";
 import { Button } from "./ui/button";
-
-interface Chat {
-  id: string;
-  title: string;
-  createdAt: Date;
-  updatedAt: Date;
-  userId: string;
-}
+import { Chat } from "@/types/chat";
 
 interface ChatHistoryListProps {
   chats: Chat[];

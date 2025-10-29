@@ -2,9 +2,9 @@
 
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { chats, messages, session } from "@/lib/db/schema";
-import { headers } from "next/headers";
+import { chats, messages } from "@/lib/db/schema";
 import { asc, desc, eq } from "drizzle-orm";
+import { headers } from "next/headers";
 
 const verifySession = async () => {
   const session = await auth.api.getSession({

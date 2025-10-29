@@ -1,6 +1,5 @@
 "use client";
 
-import { NewChatButton } from "@/components/new-chat-button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,15 +20,19 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
-import { LogOut } from "lucide-react";
+import { Edit, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ReactNode, Suspense } from "react";
+import { ChatSearchDialog } from "./chat-search-dialog";
+import { Chat } from "@/types/chat";
 
 function ChatHistoryLoading() {
   return (
@@ -44,6 +47,7 @@ function ChatHistoryLoading() {
 }
 
 interface ChatSidebarProps {
+  chats: Chat[];
   chatHistoryContent: ReactNode;
   userEmail?: string;
   userName?: string;
@@ -51,6 +55,7 @@ interface ChatSidebarProps {
 }
 
 export function ChatSidebar({
+  chats,
   chatHistoryContent,
   userEmail = "user@example.com",
   userName = "User",
@@ -81,7 +86,15 @@ export function ChatSidebar({
             <SidebarGroup>
               <SidebarMenu>
                 <SidebarMenuItem>
-                  <NewChatButton />
+                  <SidebarMenuButton asChild>
+                    <Link href="/chat">
+                      <Edit className="h-4 w-4" />
+                      <span className="text-xs">New Chat</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <ChatSearchDialog chats={chats} />
                 </SidebarMenuItem>
               </SidebarMenu>
             </SidebarGroup>
