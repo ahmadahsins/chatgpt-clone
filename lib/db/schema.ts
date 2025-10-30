@@ -6,6 +6,7 @@ import {
   boolean,
   uuid,
   pgEnum,
+  jsonb,
 } from "drizzle-orm/pg-core";
 export const chatRoleEnum = pgEnum("chat_role", ["user", "assistant"]);
 
@@ -86,6 +87,7 @@ export const messages = pgTable("messages", {
     .references(() => chats.id, { onDelete: "cascade" }),
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
+  sources: jsonb("sources").$type<{ url: string; title?: string }[]>(), // Store Google Search sources
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

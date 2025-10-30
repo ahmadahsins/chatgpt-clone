@@ -26,12 +26,27 @@ export default async function ChatDetailPage({
   }
 
   // Convert messages to format expected by useChat
-  const initialMessages = chatMessages.map((msg) => ({
-    id: msg.id,
-    role: msg.role,
-    parts: [{ type: "text", text: msg.content }],
-    createdAt: msg.createdAt,
-  }));
+  const initialMessages = chatMessages.map((msg) => {
+    const parts: any[] = [{ type: "text", text: msg.content }];
+
+    // Add sources if available
+    if (msg.sources && Array.isArray(msg.sources)) {
+      msg.sources.forEach((source: any) => {
+        parts.push({
+          type: "source-url",
+          url: source.url,
+          title: source.title,
+        });
+      });
+    }
+
+    return {
+      id: msg.id,
+      role: msg.role,
+      parts,
+      createdAt: msg.createdAt,
+    };
+  });
 
   return <ChatInterface chatId={id} initialMessages={initialMessages} />;
 }

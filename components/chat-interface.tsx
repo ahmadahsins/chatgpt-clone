@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MessageSquareIcon, SearchIcon } from "lucide-react";
+import { MessageSquareIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -11,6 +11,20 @@ import {
   ConversationEmptyState,
   ConversationScrollButton,
 } from "./ai-elements/conversation";
+import {
+  InlineCitation,
+  InlineCitationCard,
+  InlineCitationCardBody,
+  InlineCitationCardTrigger,
+  InlineCitationCarousel,
+  InlineCitationCarouselContent,
+  InlineCitationCarouselHeader,
+  InlineCitationCarouselIndex,
+  InlineCitationCarouselItem,
+  InlineCitationCarouselNext,
+  InlineCitationCarouselPrev,
+  InlineCitationSource,
+} from "./ai-elements/inline-citation";
 import { Message, MessageContent } from "./ai-elements/message";
 import {
   PromptInput,
@@ -24,23 +38,16 @@ import {
   PromptInputFooter,
   // type PromptInputMessage,
   // PromptInputModelSelect,
-  // PromptInputModelSelectContent,
-  // PromptInputModelSelectItem,
-  // PromptInputModelSelectTrigger,
-  // PromptInputModelSelectValue,
-  // PromptInputSpeechButton,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
 } from "./ai-elements/prompt-input";
-import { Response } from "./ai-elements/response";
-import { Shimmer } from "./ai-elements/shimmer";
 import {
-  Source,
-  Sources,
-  SourcesContent,
-  SourcesTrigger,
-} from "./ai-elements/sources";
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "./ai-elements/reasoning";
+import { Response } from "./ai-elements/response";
 
 interface Message {
   id: string;
@@ -111,31 +118,16 @@ export default function ChatInterface({
               <>
                 {messages.map((message, index) => (
                   <div key={message.id}>
-                    {/* Display sources for assistant messages with Google Search */}
+                    {/* Show reasoning ABOVE assistant message when streaming */}
                     {message.role === "assistant" &&
-                      message.parts.some(
-                        (part) => part.type === "source-url"
-                      ) && (
-                        <Sources>
-                          <SourcesTrigger
-                            count={
-                              message.parts.filter(
-                                (part) => part.type === "source-url"
-                              ).length
-                            }
-                          />
-                          <SourcesContent>
-                            {message.parts
-                              .filter((part) => part.type === "source-url")
-                              .map((part: any, i) => (
-                                <Source
-                                  key={`${message.id}-source-${i}`}
-                                  href={part.url}
-                                  title={part.url}
-                                />
-                              ))}
-                          </SourcesContent>
-                        </Sources>
+                      index === messages.length - 1 &&
+                      (status === "submitted" || status === "streaming") && (
+                        <Reasoning className="w-full mb-3" isStreaming={true}>
+                          <ReasoningTrigger />
+                          <ReasoningContent>
+                            Analyzing your question and preparing response...
+                          </ReasoningContent>
+                        </Reasoning>
                       )}
 
                     {/* Message content */}
@@ -153,13 +145,20 @@ export default function ChatInterface({
                               );
                             case "tool-google_search":
                               return (
-                                <div
+                                <Reasoning
                                   key={`${message.id}-${i}`}
-                                  className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-3 py-2 bg-muted/50 rounded-lg w-fit"
+                                  className="w-full mb-3"
+                                  isStreaming={
+                                    status === "streaming" &&
+                                    i === message.parts.length - 1 &&
+                                    message.id === messages.at(-1)?.id
+                                  }
                                 >
-                                  <SearchIcon className="h-4 w-4 animate-pulse" />
-                                  <span>Searching the web...</span>
-                                </div>
+                                  <ReasoningTrigger />
+                                  <ReasoningContent>
+                                    Searching the web for current information...
+                                  </ReasoningContent>
+                                </Reasoning>
                               );
                             case "source-url":
                               return null;
@@ -169,17 +168,55 @@ export default function ChatInterface({
                         })}
                       </MessageContent>
                     </Message>
+
+                    {/* Display sources for assistant messages with Google Search */}
+                    {message.role === "assistant" &&
+                      message.parts.some(
+                        (part) => part.type === "source-url"
+                      ) && (
+                        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                          <span className="font-medium">Sources:</span>
+                          {message.parts
+                            .filter((part) => part.type === "source-url")
+                            .map((part: any, i) => (
+                              <InlineCitation key={`${message.id}-source-${i}`}>
+                                <InlineCitationCard>
+                                  <InlineCitationCardTrigger
+                                    sources={[part.title || part.url]}
+                                  />
+                                  <InlineCitationCardBody>
+                                    <InlineCitationCarousel>
+                                      <InlineCitationCarouselHeader>
+                                        <InlineCitationCarouselPrev />
+                                        <InlineCitationCarouselNext />
+                                        <InlineCitationCarouselIndex />
+                                      </InlineCitationCarouselHeader>
+                                      <InlineCitationCarouselContent>
+                                        <InlineCitationCarouselItem>
+                                          <InlineCitationSource
+                                            title={part.title}
+                                            url={part.url}
+                                            description="Source from Google Search"
+                                            onClick={() =>
+                                              window.open(
+                                                part.url,
+                                                "_blank",
+                                                "noopener,noreferrer"
+                                              )
+                                            }
+                                            className="cursor-pointer hover:bg-accent transition-colors"
+                                          />
+                                        </InlineCitationCarouselItem>
+                                      </InlineCitationCarouselContent>
+                                    </InlineCitationCarousel>
+                                  </InlineCitationCardBody>
+                                </InlineCitationCard>
+                              </InlineCitation>
+                            ))}
+                        </div>
+                      )}
                   </div>
                 ))}
-                {(status === "submitted" || status === "streaming") && (
-                  <Message from="assistant">
-                    <MessageContent>
-                      <div className="flex items-center gap-2">
-                        <Shimmer duration={1}>Thinking...</Shimmer>
-                      </div>
-                    </MessageContent>
-                  </Message>
-                )}
               </>
             )}
           </ConversationContent>

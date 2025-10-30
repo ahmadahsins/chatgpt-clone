@@ -61,24 +61,37 @@ export const InlineCitationCardTrigger = ({
   sources,
   className,
   ...props
-}: InlineCitationCardTriggerProps) => (
-  <HoverCardTrigger asChild>
-    <Badge
-      className={cn("ml-1 rounded-full", className)}
-      variant="secondary"
-      {...props}
-    >
-      {sources.length ? (
-        <>
-          {new URL(sources[0]).hostname}{" "}
-          {sources.length > 1 && `+${sources.length - 1}`}
-        </>
-      ) : (
-        "unknown"
-      )}
-    </Badge>
-  </HoverCardTrigger>
-);
+}: InlineCitationCardTriggerProps) => {
+  // Helper to extract hostname from URL or return the string as-is
+  const getDisplayText = (source: string) => {
+    try {
+      // Try to parse as URL
+      return new URL(source).hostname;
+    } catch {
+      // If not a valid URL, return as-is (it's probably already a title/hostname)
+      return source;
+    }
+  };
+
+  return (
+    <HoverCardTrigger asChild>
+      <Badge
+        className={cn("ml-1 rounded-full", className)}
+        variant="secondary"
+        {...props}
+      >
+        {sources.length ? (
+          <>
+            {getDisplayText(sources[0])}{" "}
+            {sources.length > 1 && `+${sources.length - 1}`}
+          </>
+        ) : (
+          "unknown"
+        )}
+      </Badge>
+    </HoverCardTrigger>
+  );
+};
 
 export type InlineCitationCardBodyProps = ComponentProps<"div">;
 
