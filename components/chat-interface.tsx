@@ -2,7 +2,7 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { GlobeIcon, MessageSquareIcon } from "lucide-react";
+import { MessageSquareIcon, SearchIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
@@ -21,7 +21,6 @@ import {
   PromptInputAttachment,
   PromptInputAttachments,
   PromptInputBody,
-  PromptInputButton,
   PromptInputFooter,
   // type PromptInputMessage,
   // PromptInputModelSelect,
@@ -34,6 +33,14 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "./ai-elements/prompt-input";
+import { Response } from "./ai-elements/response";
+import { Shimmer } from "./ai-elements/shimmer";
+import {
+  Source,
+  Sources,
+  SourcesContent,
+  SourcesTrigger,
+} from "./ai-elements/sources";
 import {
   Tool,
   ToolContent,
@@ -41,8 +48,6 @@ import {
   ToolInput,
   ToolOutput,
 } from "./ai-elements/tool";
-import { Response } from "./ai-elements/response";
-import { Shimmer } from "./ai-elements/shimmer";
 
 interface Message {
   id: string;
@@ -111,6 +116,84 @@ export default function ChatInterface({
               />
             ) : (
               <>
+                {messages.map((message, index) => (
+                  <div key={message.id}>
+                    {/* Display sources for assistant messages with Google Search */}
+                    {message.role === "assistant" &&
+                      message.parts.some(
+                        (part) => part.type === "source-url"
+                      ) && (
+                        <Sources>
+                          <SourcesTrigger
+                            count={
+                              message.parts.filter(
+                                (part) => part.type === "source-url"
+                              ).length
+                            }
+                          />
+                          <SourcesContent>
+                            {message.parts
+                              .filter((part) => part.type === "source-url")
+                              .map((part: any, i) => (
+                                <Source
+                                  key={`${message.id}-source-${i}`}
+                                  href={part.url}
+                                  title={part.url}
+                                />
+                              ))}
+                          </SourcesContent>
+                        </Sources>
+                      )}
+
+                    {/* Message content */}
+                    <Message from={message.role}>
+                      <MessageContent
+                        className={message.role == "user" ? "max-w-md" : ""}
+                      >
+                        {message.parts.map((part, i) => {
+                          switch (part.type) {
+                            case "text":
+                              return (
+                                <Response key={`${message.id}-${i}`}>
+                                  {part.text}
+                                </Response>
+                              );
+                            case "tool-getWeather":
+                              return (
+                                <Tool key={`${message.id}-${i}`}>
+                                  <ToolHeader
+                                    type={part.type}
+                                    state={part.state}
+                                  />
+                                  <ToolContent>
+                                    <ToolInput input={part.input} />
+                                    <ToolOutput
+                                      errorText={part.errorText}
+                                      output={part.output}
+                                    />
+                                  </ToolContent>
+                                </Tool>
+                              );
+                            case "tool-google_search":
+                              return (
+                                <div
+                                  key={`${message.id}-${i}`}
+                                  className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-3 py-2 bg-muted/50 rounded-lg w-fit"
+                                >
+                                  <SearchIcon className="h-4 w-4 animate-pulse" />
+                                  <span>Searching the web...</span>
+                                </div>
+                              );
+                            case "source-url":
+                              return null;
+                            default:
+                              return null;
+                          }
+                        })}
+                      </MessageContent>
+                    </Message>
+                  </div>
+                ))}
                 {(status === "submitted" || status === "streaming") && (
                   <Message from="assistant">
                     <MessageContent>
@@ -120,42 +203,6 @@ export default function ChatInterface({
                     </MessageContent>
                   </Message>
                 )}
-                {messages.map((message, index) => (
-                  <Message from={message.role} key={message.id}>
-                    <MessageContent
-                      className={message.role == "user" ? "max-w-md" : ""}
-                    >
-                      {message.parts.map((part, i) => {
-                        switch (part.type) {
-                          case "text":
-                            return (
-                              <Response key={`${message.id}-${i}`}>
-                                {part.text}
-                              </Response>
-                            );
-                          case "tool-getWeather":
-                            return (
-                              <Tool>
-                                <ToolHeader
-                                  type={part.type}
-                                  state={part.state}
-                                />
-                                <ToolContent>
-                                  <ToolInput input={part.input} />
-                                  <ToolOutput
-                                    errorText={part.errorText}
-                                    output={part.output}
-                                  />
-                                </ToolContent>
-                              </Tool>
-                            );
-                          default:
-                            return null;
-                        }
-                      })}
-                    </MessageContent>
-                  </Message>
-                ))}
               </>
             )}
           </ConversationContent>
@@ -199,10 +246,6 @@ export default function ChatInterface({
                   onTranscriptionChange={setText}
                   textareaRef={textareaRef}
                 /> */}
-                <PromptInputButton>
-                  <GlobeIcon size={16} />
-                  <span>Search</span>
-                </PromptInputButton>
                 {/* <PromptInputModelSelect onValueChange={setModel} value={model}>
                   <PromptInputModelSelectTrigger>
                     <PromptInputModelSelectValue />

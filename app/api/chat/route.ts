@@ -1,48 +1,44 @@
-import {
-  convertToModelMessages,
-  stepCountIs,
-  streamText,
-  tool,
-  UIMessage,
-} from "ai";
-import { google } from "@ai-sdk/google";
+import { generateChatTitleAsync } from "@/lib/ai-sdk/title-generator";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { chats, messages } from "@/lib/db/schema";
+import { google } from "@ai-sdk/google";
+import { convertToModelMessages, stepCountIs, streamText, UIMessage } from "ai";
 import { eq } from "drizzle-orm";
-import z from "zod";
-import { generateChatTitleAsync } from "@/lib/ai-sdk/title-generator";
 
 export const maxDuration = 30;
 
 const tools = {
-  getWeather: tool({
-    description: "Get the weather for a spesific location",
-    inputSchema: z.object({
-      city: z.string(),
-    }),
-    execute: async ({ city }) => {
-      const response = await fetch(
-        `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
-      );
-      const data = await response.json();
-      const weatherData = {
-        location: {
-          name: data.location.name,
-          country: data.location.country,
-          localtime: data.location.localtime,
-        },
-        current: {
-          temp_c: data.current.temp_c,
-          condition: {
-            text: data.current.condition.text,
-            code: data.current.condition.code,
-          },
-        },
-      };
-      return weatherData;
-    },
-  }),
+  // Google Search - Built-in grounding tool
+  google_search: google.tools.googleSearch({}),
+
+  // getWeather: tool({
+  //   description: "Get the weather for a spesific location",
+  //   inputSchema: z.object({
+  //     city: z.string(),
+  //   }),
+  //   execute: async ({ city }) => {
+  //     const response = await fetch(
+  //       `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
+  //     );
+  //     const data = await response.json();
+  //     const weatherData = {
+  //       location: {
+  //         name: data.location.name,
+  //         country: data.location.country,
+  //         localtime: data.location.localtime,
+  //       },
+  //       current: {
+  //         temp_c: data.current.temp_c,
+  //         condition: {
+  //           text: data.current.condition.text,
+  //           code: data.current.condition.code,
+  //         },
+  //       },
+  //     };
+  //     return weatherData;
+  //   },
+  // }),
 };
 
 export async function POST(req: Request) {
@@ -59,7 +55,10 @@ export async function POST(req: Request) {
     const {
       messages: uiMessages,
       chatId,
-    }: { messages: UIMessage[]; chatId: string } = await req.json();
+    }: {
+      messages: UIMessage[];
+      chatId: string;
+    } = await req.json();
 
     // Handle new chat creation
     let currentChatId = chatId;
@@ -132,6 +131,7 @@ export async function POST(req: Request) {
     });
 
     const response = result.toUIMessageStreamResponse({
+      sendSources: true, // ✅ Enable sources from Google Search
       messageMetadata: ({ part }) => {
         // Send chat ID as metadata when streaming starts
         if (part.type === "start") {
