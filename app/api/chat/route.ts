@@ -11,34 +11,6 @@ export const maxDuration = 30;
 const tools = {
   // Google Search - Built-in grounding tool
   google_search: google.tools.googleSearch({}),
-
-  // getWeather: tool({
-  //   description: "Get the weather for a spesific location",
-  //   inputSchema: z.object({
-  //     city: z.string(),
-  //   }),
-  //   execute: async ({ city }) => {
-  //     const response = await fetch(
-  //       `http://api.weatherapi.com/v1/current.json?key=${process.env.WEATHER_API_KEY}&q=${city}`
-  //     );
-  //     const data = await response.json();
-  //     const weatherData = {
-  //       location: {
-  //         name: data.location.name,
-  //         country: data.location.country,
-  //         localtime: data.location.localtime,
-  //       },
-  //       current: {
-  //         temp_c: data.current.temp_c,
-  //         condition: {
-  //           text: data.current.condition.text,
-  //           code: data.current.condition.code,
-  //         },
-  //       },
-  //     };
-  //     return weatherData;
-  //   },
-  // }),
 };
 
 export async function POST(req: Request) {

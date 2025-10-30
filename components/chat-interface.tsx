@@ -41,13 +41,6 @@ import {
   SourcesContent,
   SourcesTrigger,
 } from "./ai-elements/sources";
-import {
-  Tool,
-  ToolContent,
-  ToolHeader,
-  ToolInput,
-  ToolOutput,
-} from "./ai-elements/tool";
 
 interface Message {
   id: string;
@@ -157,22 +150,6 @@ export default function ChatInterface({
                                 <Response key={`${message.id}-${i}`}>
                                   {part.text}
                                 </Response>
-                              );
-                            case "tool-getWeather":
-                              return (
-                                <Tool key={`${message.id}-${i}`}>
-                                  <ToolHeader
-                                    type={part.type}
-                                    state={part.state}
-                                  />
-                                  <ToolContent>
-                                    <ToolInput input={part.input} />
-                                    <ToolOutput
-                                      errorText={part.errorText}
-                                      output={part.output}
-                                    />
-                                  </ToolContent>
-                                </Tool>
                               );
                             case "tool-google_search":
                               return (
