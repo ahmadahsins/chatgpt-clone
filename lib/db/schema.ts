@@ -88,6 +88,15 @@ export const messages = pgTable("messages", {
   role: chatRoleEnum("role").notNull(),
   content: text("content").notNull(),
   sources: jsonb("sources").$type<{ url: string; title?: string }[]>(), // Store Google Search sources
+  attachments: jsonb("attachments").$type<
+    {
+      type: "image" | "pdf";
+      url: string;
+      filename: string;
+      size: number;
+      mimeType: string;
+    }[]
+  >(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

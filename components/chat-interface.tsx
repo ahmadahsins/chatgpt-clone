@@ -36,8 +36,6 @@ import {
   PromptInputAttachments,
   PromptInputBody,
   PromptInputFooter,
-  // type PromptInputMessage,
-  // PromptInputModelSelect,
   PromptInputSubmit,
   PromptInputTextarea,
   PromptInputTools,
@@ -67,6 +65,7 @@ export default function ChatInterface({
   const router = useRouter();
   const [currentChatId, setCurrentChatId] = useState(chatId);
   const hasNavigated = useRef(false);
+  const [isUploading, setIsUploading] = useState(false);
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -102,12 +101,9 @@ export default function ChatInterface({
   return (
     <div className="flex h-full flex-col">
       {/* Messages Area - Scrollable container */}
-      <div className="flex-1 overflow-y-auto">
-        <Conversation
-          className="relative size-full max-w-3xl 2xl:max-w-4xl mx-auto overflow-visible"
-          style={{ height: "auto" }}
-        >
-          <ConversationContent className="overflow-visible">
+      <Conversation className="flex-1">
+        <ConversationContent>
+          <div className="max-w-3xl 2xl:max-w-4xl mx-auto">
             {messages.length === 0 ? (
               <ConversationEmptyState
                 icon={<MessageSquareIcon className="size-6" />}
@@ -118,7 +114,7 @@ export default function ChatInterface({
               <>
                 {messages.map((message, index) => (
                   <div key={message.id}>
-                    {/* Show reasoning ABOVE assistant message when streaming */}
+                    {/* Show reasoning when streaming */}
                     {message.role === "assistant" &&
                       index === messages.length - 1 &&
                       (status === "submitted" || status === "streaming") && (
@@ -137,6 +133,42 @@ export default function ChatInterface({
                       >
                         {message.parts.map((part, i) => {
                           switch (part.type) {
+                            case "file":
+                              if (part.mediaType?.startsWith("image/")) {
+                                return (
+                                  <div
+                                    key={`${message.id}-${i}`}
+                                    className="mb-2"
+                                  >
+                                    <img
+                                      src={part.url}
+                                      alt={part.filename ?? `attachment-${i}`}
+                                      width={500}
+                                      height={500}
+                                      className="rounded-lg"
+                                    />
+                                  </div>
+                                );
+                              }
+                              if (
+                                part.mediaType?.startsWith("application/pdf")
+                              ) {
+                                return (
+                                  <div
+                                    key={`${message.id}-${i}`}
+                                    className="mb-2"
+                                  >
+                                    <iframe
+                                      src={part.url}
+                                      width="100%"
+                                      height="600"
+                                      title={part.filename ?? `attachment-${i}`}
+                                      className="rounded-lg border"
+                                    />
+                                  </div>
+                                );
+                              }
+                              return null;
                             case "text":
                               return (
                                 <Response key={`${message.id}-${i}`}>
@@ -219,24 +251,85 @@ export default function ChatInterface({
                 ))}
               </>
             )}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-      </div>
+          </div>
+        </ConversationContent>
+        <ConversationScrollButton />
+      </Conversation>
 
       {/* Input Area */}
       <div className="border-t bg-background">
         <div className="mx-auto max-w-3xl px-4 py-4">
           <PromptInput
-            onSubmit={(message, event) => {
+            onSubmit={async (message, event) => {
               event.preventDefault();
+
+              // Store form reference before async operations
+              const form = event.currentTarget;
+
               const text = (message.text ?? "").trim();
               if (!text && !(message.files && message.files.length > 0)) return;
-              sendMessage({
-                text,
-                files: message.files,
-              });
-              event.currentTarget.reset();
+
+              try {
+                // Upload files to Vercel Blob if any
+                let uploadedFiles = message.files;
+                if (message.files && message.files.length > 0) {
+                  setIsUploading(true);
+
+                  uploadedFiles = await Promise.all(
+                    message.files.map(async (file) => {
+                      // Convert data URL to Blob
+                      const response = await fetch(file.url);
+                      const blob = await response.blob();
+
+                      // Create FormData with proper filename
+                      const formData = new FormData();
+                      const filename = file.filename || `file-${Date.now()}`;
+                      formData.append("file", blob, filename);
+
+                      // Upload to Vercel Blob
+                      const uploadResponse = await fetch("/api/upload", {
+                        method: "POST",
+                        body: formData,
+                      });
+
+                      if (!uploadResponse.ok) {
+                        const error = await uploadResponse.json();
+                        throw new Error(error.error || "Failed to upload file");
+                      }
+
+                      const uploadedFile = await uploadResponse.json();
+
+                      // Return file with Vercel Blob URL
+                      return {
+                        type: "file" as const,
+                        url: uploadedFile.url,
+                        filename: uploadedFile.filename,
+                        mediaType: uploadedFile.mimeType,
+                        size: uploadedFile.size,
+                      };
+                    })
+                  );
+
+                  setIsUploading(false);
+                }
+
+                sendMessage({
+                  text,
+                  files: uploadedFiles,
+                });
+
+                if (form) {
+                  form.reset();
+                }
+              } catch (error) {
+                setIsUploading(false);
+                console.error("Upload error:", error);
+                alert(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to upload file"
+                );
+              }
             }}
             className="mt-4"
             globalDrop
@@ -260,23 +353,12 @@ export default function ChatInterface({
                   onTranscriptionChange={setText}
                   textareaRef={textareaRef}
                 /> */}
-                {/* <PromptInputModelSelect onValueChange={setModel} value={model}>
-                  <PromptInputModelSelectTrigger>
-                    <PromptInputModelSelectValue />
-                  </PromptInputModelSelectTrigger>
-                  <PromptInputModelSelectContent>
-                    {models.map((modelOption) => (
-                      <PromptInputModelSelectItem
-                        key={modelOption.id}
-                        value={modelOption.id}
-                      >
-                        {modelOption.name}
-                      </PromptInputModelSelectItem>
-                    ))}
-                  </PromptInputModelSelectContent>
-                </PromptInputModelSelect> */}
               </PromptInputTools>
-              <PromptInputSubmit className="h-8!" status={status} />
+              <PromptInputSubmit
+                className="h-8!"
+                status={isUploading ? "submitted" : status}
+                disabled={isUploading}
+              />
             </PromptInputFooter>
           </PromptInput>
           <p className="mt-2 text-xs text-center text-muted-foreground">
