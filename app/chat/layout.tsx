@@ -20,7 +20,7 @@ export default async function ChatLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full sticky top-0">
         {/* Sidebar - Client Component with Server Component as children */}
         <ChatSidebar
           chats={chats}

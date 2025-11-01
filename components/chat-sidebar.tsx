@@ -88,7 +88,7 @@ export function ChatSidebar({
                 <SidebarMenuButton asChild>
                   <Link href="/chat">
                     <Edit className="h-4 w-4" />
-                    <span className="text-xs">New Chat</span>
+                    <span>New Chat</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -126,7 +126,7 @@ export function ChatSidebar({
                     <span className="text-sm font-medium truncate">
                       {userName}
                     </span>
-                    <span className="text-xs text-muted-foreground truncate">
+                    <span className="text-sm text-muted-foreground truncate">
                       {userEmail}
                     </span>
                   </div>

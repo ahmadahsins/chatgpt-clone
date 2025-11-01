@@ -428,7 +428,6 @@ export default function ChatInterface({
                 </>
               </div>
             </ConversationContent>
-            <ConversationScrollButton />
           </Conversation>
 
           {/* Input Area */}

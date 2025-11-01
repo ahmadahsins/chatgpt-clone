@@ -43,7 +43,7 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
       <SidebarGroupContent>
         <SidebarMenu>
           {chats.length === 0 ? (
-            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+            <div className="px-4 py-8 text-center text-muted-foreground">
               No chat history yet
             </div>
           ) : (
@@ -55,7 +55,7 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
                       href={`/chat/${chat.id}`}
                       onClick={() => setOpenMobile(false)}
                     >
-                      <span className="truncate text-xs">{chat.title}</span>
+                      <span className="truncate">{chat.title}</span>
                     </Link>
                   </SidebarMenuButton>
 

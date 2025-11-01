@@ -60,8 +60,9 @@ export function DeleteChatDialog({
         <AlertDialogHeader>
           <AlertDialogTitle>Delete Chat</AlertDialogTitle>
           <AlertDialogDescription>
-            This will delete{" "}
-            <span className="font-semibold text-white">{chatTitle}</span>.
+            This will delete
+            <span className="font-semibold text-foreground">{` ${chatTitle}`}</span>
+            .
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

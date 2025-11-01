@@ -50,7 +50,7 @@ export function ChatSearchDialog({ chats }: { chats: Chat[] }) {
         <SidebarMenuButton asChild className="cursor-pointer">
           <div>
             <Search className="h-4 w-4" />
-            <span className="text-xs">Search</span>
+            <span>Search</span>
           </div>
         </SidebarMenuButton>
       </DialogTrigger>
