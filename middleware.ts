@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Skip middleware for auth routes
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   // Check for better-auth session token cookie
-  // The actual session validation happens server-side in the page
   const sessionToken = request.cookies.get("better-auth.session_token");
 
-  // Redirect to home if no session token exists
+  // Redirect to login if no session token exists
   if (!sessionToken) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
@@ -14,6 +20,9 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/", "/chat"],
-  // runtime: "edge", // Explicitly use Edge Runtime
+  matcher: [
+    "/",
+    "/chat/:path*",
+    "/((?!api/auth|login|signup|_next/static|_next/image|favicon.ico).*)",
+  ],
 };
