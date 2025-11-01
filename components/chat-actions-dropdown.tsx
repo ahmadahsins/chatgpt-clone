@@ -50,7 +50,7 @@ export function ChatActionsDropdown({
           onSelect={() => {
             onRename(chatId, chatTitle);
           }}
-          className="cursor-pointer"
+          className="cursor-pointer hover:bg-accent"
         >
           <Pencil className="mr-1 h-4 w-4" />
           Rename
@@ -59,7 +59,7 @@ export function ChatActionsDropdown({
           onSelect={() => {
             onDelete(chatId, chatTitle);
           }}
-          className="text-destructive hover:bg-destructive hover:text-white"
+          className="text-destructive hover:bg-red-500/10 cursor-pointer"
         >
           <Trash2 className="mr-1 h-4 w-4 focus:text-destructive" />
           Delete

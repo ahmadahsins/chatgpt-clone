@@ -2,9 +2,16 @@
 
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import { MessageSquareIcon } from "lucide-react";
+import {
+  CheckIcon,
+  CopyIcon,
+  MessageSquareIcon,
+  ThumbsDown,
+  ThumbsUp,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Action, Actions } from "./ai-elements/actions";
 import {
   Conversation,
   ConversationContent,
@@ -46,6 +53,7 @@ import {
   ReasoningTrigger,
 } from "./ai-elements/reasoning";
 import { Response } from "./ai-elements/response";
+import { useTheme } from "next-themes";
 
 interface Message {
   id: string;
@@ -64,8 +72,11 @@ export default function ChatInterface({
 }: ChatInterfaceProps = {}) {
   const router = useRouter();
   const [currentChatId, setCurrentChatId] = useState(chatId);
-  const hasNavigated = useRef(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [isLiked, setIsLiked] = useState<boolean | null>(null);
+  const { theme } = useTheme();
+  const hasNavigated = useRef(false);
 
   const { messages, sendMessage, status, setMessages } = useChat({
     transport: new DefaultChatTransport({
@@ -129,7 +140,9 @@ export default function ChatInterface({
                     {/* Message content */}
                     <Message from={message.role}>
                       <MessageContent
-                        className={message.role == "user" ? "max-w-md" : ""}
+                        className={
+                          message.role == "user" ? "max-w-md" : "max-w-full"
+                        }
                       >
                         {message.parts.map((part, i) => {
                           switch (part.type) {
@@ -206,7 +219,7 @@ export default function ChatInterface({
                       message.parts.some(
                         (part) => part.type === "source-url"
                       ) && (
-                        <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                        <div className="ml-4 -mt-5 mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                           <span className="font-medium">Sources:</span>
                           {message.parts
                             .filter((part) => part.type === "source-url")
@@ -247,6 +260,61 @@ export default function ChatInterface({
                             ))}
                         </div>
                       )}
+
+                    {message.role === "assistant" && (
+                      <Actions className="ml-2 -mt-5">
+                        <Action
+                          tooltip="Copy"
+                          onClick={() => {
+                            if (
+                              message.parts.some((part) => part.type === "text")
+                            ) {
+                              navigator.clipboard.writeText(
+                                message.parts.find(
+                                  (part) => part.type === "text"
+                                )?.text ?? ""
+                              );
+                              setCopiedMessageId(message.id);
+
+                              setTimeout(() => {
+                                setCopiedMessageId(null);
+                              }, 2000);
+                            }
+                          }}
+                          label="Copy"
+                        >
+                          {copiedMessageId === message.id ? (
+                            <CheckIcon className="size-4" />
+                          ) : (
+                            <CopyIcon className="size-4" />
+                          )}
+                        </Action>
+                        {isLiked === null ? (
+                          <>
+                            <Action onClick={() => setIsLiked(true)}>
+                              <ThumbsUp className="size-4" />
+                            </Action>
+                            <Action onClick={() => setIsLiked(false)}>
+                              <ThumbsDown className="size-4" />
+                            </Action>
+                          </>
+                        ) : (
+                          <Action onClick={() => setIsLiked(null)}>
+                            {isLiked ? (
+                              <ThumbsUp
+                                fill={theme === "dark" ? "white" : "black"}
+                                className="size-4"
+                              />
+                            ) : (
+                              <ThumbsDown
+                                fill={theme === "dark" ? "white" : "black"}
+                                className="size-4"
+                              />
+                            )}
+                          </Action>
+                        )}
+                      </Actions>
+                    )}
                   </div>
                 ))}
               </>
@@ -339,7 +407,7 @@ export default function ChatInterface({
               <PromptInputAttachments>
                 {(attachment) => <PromptInputAttachment data={attachment} />}
               </PromptInputAttachments>
-              <PromptInputTextarea placeholder="Type a message..." />
+              <PromptInputTextarea placeholder="Ask anything..." />
             </PromptInputBody>
             <PromptInputFooter>
               <PromptInputTools>

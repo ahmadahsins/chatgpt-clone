@@ -37,13 +37,25 @@ export function RenameChatDialog({
     }
   }, [open, currentTitle]);
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!newTitle.trim() || newTitle === currentTitle) {
+      return;
+    }
+
+    await renameChatTitle(chatId, newTitle);
+    onOpenChange(false);
+    router.refresh();
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="hidden"></DialogTitle>
         </DialogHeader>
-        <form>
+        <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
               <Label htmlFor="title">New name</Label>
@@ -64,12 +76,8 @@ export function RenameChatDialog({
               </Button>
             </DialogClose>
             <Button
-              type="button"
-              onClick={() => {
-                renameChatTitle(chatId, newTitle);
-                onOpenChange(false);
-                router.refresh();
-              }}
+              type="submit"
+              disabled={!newTitle.trim() || newTitle === currentTitle}
             >
               Rename
             </Button>

@@ -79,34 +79,34 @@ export function ChatSidebar({
         />
       </SidebarHeader>
 
-      <SidebarContent>
-        <SidebarGroup>
+      <SidebarContent className="flex flex-col overflow-hidden">
+        {/* Fixed Section - New Chat & Search */}
+        <SidebarGroup className="shrink-0">
           <SidebarGroupContent>
-            {/* New Chat Button */}
-            <SidebarGroup>
-              <SidebarMenu>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link href="/chat">
-                      <Edit className="h-4 w-4" />
-                      <span className="text-xs">New Chat</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <ChatSearchDialog chats={chats} />
-                </SidebarMenuItem>
-              </SidebarMenu>
-            </SidebarGroup>
-
-            {/* Chat History */}
-            <SidebarGroup>
-              <SidebarGroupLabel>Chats</SidebarGroupLabel>
-              <Suspense fallback={<ChatHistoryLoading />}>
-                {chatHistoryContent}
-              </Suspense>
-            </SidebarGroup>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/chat">
+                    <Edit className="h-4 w-4" />
+                    <span className="text-xs">New Chat</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <ChatSearchDialog chats={chats} />
+              </SidebarMenuItem>
+            </SidebarMenu>
           </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* Scrollable Section - Chat History */}
+        <SidebarGroup className="flex-1 overflow-hidden">
+          <SidebarGroupLabel className="px-2">Chats</SidebarGroupLabel>
+          <div className="overflow-y-auto h-full">
+            <Suspense fallback={<ChatHistoryLoading />}>
+              {chatHistoryContent}
+            </Suspense>
+          </div>
         </SidebarGroup>
       </SidebarContent>
 
