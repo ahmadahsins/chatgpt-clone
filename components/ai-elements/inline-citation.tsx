@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
+import Link from "next/link";
 import {
   type ComponentProps,
   createContext,
@@ -55,10 +56,12 @@ export const InlineCitationCard = (props: InlineCitationCardProps) => (
 
 export type InlineCitationCardTriggerProps = ComponentProps<typeof Badge> & {
   sources: string[];
+  url?: string;
 };
 
 export const InlineCitationCardTrigger = ({
   sources,
+  url,
   className,
   ...props
 }: InlineCitationCardTriggerProps) => {
@@ -76,8 +79,13 @@ export const InlineCitationCardTrigger = ({
   return (
     <HoverCardTrigger asChild>
       <Badge
-        className={cn("ml-1 rounded-full", className)}
+        className={cn("ml-1 rounded-full cursor-pointer", className)}
         variant="secondary"
+        onClick={() => {
+          if (url) {
+            window.open(url, "_blank");
+          }
+        }}
         {...props}
       >
         {sources.length ? (

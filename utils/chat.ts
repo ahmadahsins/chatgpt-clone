@@ -38,3 +38,11 @@ export function searchChats(chats: Chat[], query: string) {
   const lowerQuery = query.toLowerCase();
   return chats.filter((chat) => chat.title.toLowerCase().includes(lowerQuery));
 }
+
+// Helper function to get time-based greeting
+export function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}

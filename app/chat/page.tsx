@@ -14,5 +14,5 @@ export default async function ChatPage() {
     redirect("/login");
   }
 
-  return <ChatInterface />;
+  return <ChatInterface userName={session.user?.name || "User"} />;
 }
