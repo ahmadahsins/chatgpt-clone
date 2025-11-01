@@ -226,4 +226,43 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom Scrollbar Styling */
+  ::-webkit-scrollbar {
+    width: 80\px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.708 0 0 / 0.3);
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.708 0 0 / 0.5);
+  }
+
+  /* Dark mode scrollbar */
+  .dark ::-webkit-scrollbar-thumb {
+    background: oklch(0.556 0 0 / 0.3);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.556 0 0 / 0.5);
+  }
+
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: medium;
+    scrollbar-color: oklch(0.708 0 0 / 0.3) transparent;
+  }
+
+  .dark * {
+    scrollbar-color: oklch(0.556 0 0 / 0.3) transparent;
+  }
 }

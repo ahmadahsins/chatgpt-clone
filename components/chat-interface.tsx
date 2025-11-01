@@ -129,9 +129,7 @@ export default function ChatInterface({
                     {/* Message content */}
                     <Message from={message.role}>
                       <MessageContent
-                        className={
-                          message.role == "user" ? "max-w-md" : "bg-green-500"
-                        }
+                        className={message.role == "user" ? "max-w-md" : ""}
                       >
                         {message.parts.map((part, i) => {
                           switch (part.type) {
