@@ -1,6 +1,7 @@
 import { ChatHistoryList } from "@/components/chat-history-list";
 import { ChatSidebar } from "@/components/chat-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { ChatHeaderActions } from "@/components/chat-header-actions";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { auth } from "@/lib/auth";
 import { getUserChats } from "@/server/chat-actions";
@@ -37,10 +38,15 @@ export default async function ChatLayout({
                 <SidebarTrigger />
                 <h1 className="text-lg font-semibold">ChatGPT</h1>
               </div>
-              <ThemeToggle />
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <ChatHeaderActions chats={chats} />
+              </div>
             </div>
           </header>
-          <main className="flex-1 overflow-hidden">{children}</main>
+          <main className="flex-1 overflow-hidden max-w-screen w-full">
+            {children}
+          </main>
         </div>
       </div>
     </SidebarProvider>

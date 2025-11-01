@@ -1,25 +1,19 @@
 "use client";
 
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   SidebarGroup,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { DeleteChatDialog } from "./delete-chat-dialog";
 import { RenameChatDialog } from "./rename-chat-dialog";
-import { Button } from "./ui/button";
 import { Chat } from "@/types/chat";
+import { ChatActionsDropdown } from "./chat-actions-dropdown";
 
 interface ChatHistoryListProps {
   chats: Chat[];
@@ -27,6 +21,8 @@ interface ChatHistoryListProps {
 
 // Client Component - Handle interactivity
 export function ChatHistoryList({ chats }: ChatHistoryListProps) {
+  const { setOpenMobile } = useSidebar();
+
   const [renameDialog, setRenameDialog] = useState<{
     open: boolean;
     chatId: string;
@@ -55,54 +51,34 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
               <SidebarMenuItem key={chat.id} className="group/item relative">
                 <div className="flex items-center gap-1">
                   <SidebarMenuButton asChild className="flex-1">
-                    <Link href={`/chat/${chat.id}`}>
+                    <Link
+                      href={`/chat/${chat.id}`}
+                      onClick={() => setOpenMobile(false)}
+                    >
                       <span className="truncate text-xs">{chat.title}</span>
                     </Link>
                   </SidebarMenuButton>
 
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-32">
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setRenameDialog({
-                            open: true,
-                            chatId: chat.id,
-                            currentTitle: chat.title,
-                          });
-                        }}
-                        className="cursor-pointer"
-                      >
-                        <Pencil className="mr-1 h-4 w-4" />
-                        Rename
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onSelect={() => {
-                          setDeleteDialog({
-                            open: true,
-                            chatId: chat.id,
-                            title: chat.title,
-                          });
-                        }}
-                        className="text-destructive hover:bg-destructive hover:text-white"
-                      >
-                        <Trash2 className="mr-1 h-4 w-4 focus:text-destructive" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <ChatActionsDropdown
+                    isLayout={false}
+                    chatId={chat.id}
+                    chatTitle={chat.title}
+                    onRename={(chatId, currentTitle) => {
+                      setRenameDialog({
+                        open: true,
+                        chatId,
+                        currentTitle,
+                      });
+                    }}
+                    onDelete={(chatId, title) => {
+                      setDeleteDialog({
+                        open: true,
+                        chatId,
+                        title,
+                      });
+                    }}
+                    className="h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                  />
                 </div>
               </SidebarMenuItem>
             ))
