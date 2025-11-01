@@ -1,21 +1,16 @@
 "use client";
 
+import { getGreeting } from "@/utils/chat";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
-import {
-  CheckIcon,
-  CopyIcon,
-  MessageSquareIcon,
-  ThumbsDown,
-  ThumbsUp,
-} from "lucide-react";
+import { CheckIcon, CopyIcon, ThumbsDown, ThumbsUp } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Action, Actions } from "./ai-elements/actions";
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from "./ai-elements/conversation";
 import {
@@ -25,11 +20,7 @@ import {
   InlineCitationCardTrigger,
   InlineCitationCarousel,
   InlineCitationCarouselContent,
-  InlineCitationCarouselHeader,
-  InlineCitationCarouselIndex,
   InlineCitationCarouselItem,
-  InlineCitationCarouselNext,
-  InlineCitationCarouselPrev,
   InlineCitationSource,
 } from "./ai-elements/inline-citation";
 import { Message, MessageContent } from "./ai-elements/message";
@@ -53,8 +44,6 @@ import {
   ReasoningTrigger,
 } from "./ai-elements/reasoning";
 import { Response } from "./ai-elements/response";
-import { useTheme } from "next-themes";
-import { getGreeting } from "@/utils/chat";
 
 interface Message {
   id: string;
@@ -79,6 +68,7 @@ export default function ChatInterface({
   const [isUploading, setIsUploading] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState<boolean | null>(null);
+  const [isHydrated, setIsHydrated] = useState(false);
   const { theme } = useTheme();
   const hasNavigated = useRef(false);
   const greeting = getGreeting();
@@ -107,16 +97,88 @@ export default function ChatInterface({
     },
   });
 
+  const handleSubmit = async (message: any, event: any) => {
+    event.preventDefault();
+
+    // Store form reference before async operations
+    const form = event.currentTarget;
+
+    const text = (message.text ?? "").trim();
+    if (!text && !(message.files && message.files.length > 0)) return;
+
+    try {
+      // Upload files to Vercel Blob if any
+      let uploadedFiles = message.files;
+      if (message.files && message.files.length > 0) {
+        setIsUploading(true);
+
+        uploadedFiles = await Promise.all(
+          message.files.map(async (file: any) => {
+            // Convert data URL to Blob
+            const response = await fetch(file.url);
+            const blob = await response.blob();
+
+            // Create FormData with proper filename
+            const formData = new FormData();
+            const filename = file.filename || `file-${Date.now()}`;
+            formData.append("file", blob, filename);
+
+            // Upload to Vercel Blob
+            const uploadResponse = await fetch("/api/upload", {
+              method: "POST",
+              body: formData,
+            });
+
+            if (!uploadResponse.ok) {
+              const error = await uploadResponse.json();
+              throw new Error(error.error || "Failed to upload file");
+            }
+
+            const uploadedFile = await uploadResponse.json();
+
+            // Return file with Vercel Blob URL
+            return {
+              type: "file" as const,
+              url: uploadedFile.url,
+              filename: uploadedFile.filename,
+              mediaType: uploadedFile.mimeType,
+              size: uploadedFile.size,
+            };
+          })
+        );
+
+        setIsUploading(false);
+      }
+
+      sendMessage({
+        text,
+        files: uploadedFiles,
+      });
+
+      if (form) {
+        form.reset();
+      }
+    } catch (error) {
+      setIsUploading(false);
+      console.error("Upload error:", error);
+      alert(error instanceof Error ? error.message : "Failed to upload file");
+    }
+  };
+
   // Initialize messages from server on mount (for existing chats)
   useEffect(() => {
     if (initialMessages && initialMessages.length > 0) {
       setMessages(initialMessages);
     }
-
-    if (!params.id) {
-      return;
-    }
   }, [initialMessages, setMessages, params]);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  if (!isHydrated) {
+    return null;
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -133,76 +195,7 @@ export default function ChatInterface({
             </div>
 
             {/* Centered Prompt Input */}
-            <PromptInput
-              onSubmit={async (message, event) => {
-                event.preventDefault();
-                const form = event.currentTarget;
-                const text = (message.text ?? "").trim();
-                if (!text && !(message.files && message.files.length > 0))
-                  return;
-
-                try {
-                  let uploadedFiles = message.files;
-                  if (message.files && message.files.length > 0) {
-                    setIsUploading(true);
-
-                    uploadedFiles = await Promise.all(
-                      message.files.map(async (file) => {
-                        const response = await fetch(file.url);
-                        const blob = await response.blob();
-
-                        const formData = new FormData();
-                        const filename = file.filename || `file-${Date.now()}`;
-                        formData.append("file", blob, filename);
-
-                        const uploadResponse = await fetch("/api/upload", {
-                          method: "POST",
-                          body: formData,
-                        });
-
-                        if (!uploadResponse.ok) {
-                          const error = await uploadResponse.json();
-                          throw new Error(
-                            error.error || "Failed to upload file"
-                          );
-                        }
-
-                        const uploadedFile = await uploadResponse.json();
-
-                        return {
-                          type: "file" as const,
-                          url: uploadedFile.url,
-                          filename: uploadedFile.filename,
-                          mediaType: uploadedFile.mimeType,
-                          size: uploadedFile.size,
-                        };
-                      })
-                    );
-
-                    setIsUploading(false);
-                  }
-
-                  sendMessage({
-                    text,
-                    files: uploadedFiles,
-                  });
-
-                  if (form) {
-                    form.reset();
-                  }
-                } catch (error) {
-                  setIsUploading(false);
-                  console.error("Upload error:", error);
-                  alert(
-                    error instanceof Error
-                      ? error.message
-                      : "Failed to upload file"
-                  );
-                }
-              }}
-              globalDrop
-              multiple
-            >
+            <PromptInput onSubmit={handleSubmit} globalDrop multiple>
               <PromptInputBody>
                 <PromptInputAttachments>
                   {(attachment) => <PromptInputAttachment data={attachment} />}
@@ -334,7 +327,7 @@ export default function ChatInterface({
                         message.parts.some(
                           (part) => part.type === "source-url"
                         ) && (
-                          <div className="ml-4 -mt-5 mb-6 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                          <div className="ml-4 -mt-5 mb-7 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
                             <span className="font-medium">Sources:</span>
                             {message.parts
                               .filter((part) => part.type === "source-url")
@@ -442,81 +435,7 @@ export default function ChatInterface({
           <div className="border-t bg-background">
             <div className="mx-auto max-w-3xl px-4 py-4">
               <PromptInput
-                onSubmit={async (message, event) => {
-                  event.preventDefault();
-
-                  // Store form reference before async operations
-                  const form = event.currentTarget;
-
-                  const text = (message.text ?? "").trim();
-                  if (!text && !(message.files && message.files.length > 0))
-                    return;
-
-                  try {
-                    // Upload files to Vercel Blob if any
-                    let uploadedFiles = message.files;
-                    if (message.files && message.files.length > 0) {
-                      setIsUploading(true);
-
-                      uploadedFiles = await Promise.all(
-                        message.files.map(async (file) => {
-                          // Convert data URL to Blob
-                          const response = await fetch(file.url);
-                          const blob = await response.blob();
-
-                          // Create FormData with proper filename
-                          const formData = new FormData();
-                          const filename =
-                            file.filename || `file-${Date.now()}`;
-                          formData.append("file", blob, filename);
-
-                          // Upload to Vercel Blob
-                          const uploadResponse = await fetch("/api/upload", {
-                            method: "POST",
-                            body: formData,
-                          });
-
-                          if (!uploadResponse.ok) {
-                            const error = await uploadResponse.json();
-                            throw new Error(
-                              error.error || "Failed to upload file"
-                            );
-                          }
-
-                          const uploadedFile = await uploadResponse.json();
-
-                          // Return file with Vercel Blob URL
-                          return {
-                            type: "file" as const,
-                            url: uploadedFile.url,
-                            filename: uploadedFile.filename,
-                            mediaType: uploadedFile.mimeType,
-                            size: uploadedFile.size,
-                          };
-                        })
-                      );
-
-                      setIsUploading(false);
-                    }
-
-                    sendMessage({
-                      text,
-                      files: uploadedFiles,
-                    });
-
-                    if (form) {
-                      form.reset();
-                    }
-                  } catch (error) {
-                    setIsUploading(false);
-                    console.error("Upload error:", error);
-                    alert(
-                      error instanceof Error
-                        ? error.message
-                        : "Failed to upload file"
-                    );
-                  }
-                }}
+                onSubmit={handleSubmit}
                 className="mt-4"
                 globalDrop
                 multiple

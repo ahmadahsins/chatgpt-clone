@@ -79,15 +79,18 @@ export async function POST(req: Request) {
         filename: string;
         size: number;
         mimeType: string;
-      }> = lastMessage.parts
-        ?.filter((part: any) => part.type === "file")
-        .map((part: any) => ({
-          type: (part.mediaType?.startsWith("image/") ? "image" : "pdf") as "image" | "pdf",
-          url: part.url as string,
-          filename: (part.filename || "attachment") as string,
-          size: (part.size || 0) as number,
-          mimeType: (part.mediaType || "") as string,
-        })) || [];
+      }> =
+        lastMessage.parts
+          ?.filter((part: any) => part.type === "file")
+          .map((part: any) => ({
+            type: (part.mediaType?.startsWith("image/") ? "image" : "pdf") as
+              | "image"
+              | "pdf",
+            url: part.url as string,
+            filename: (part.filename || "attachment") as string,
+            size: (part.size || 0) as number,
+            mimeType: (part.mediaType || "") as string,
+          })) || [];
 
       await db.insert(messages).values({
         chatId: currentChatId,
