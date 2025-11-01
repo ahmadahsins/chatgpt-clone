@@ -10,12 +10,14 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 ## ✨ Features
 
 ### 🔐 Authentication
+
 - **Multiple Sign-in Methods**: Google OAuth & Email/Password
 - **Secure Sessions**: Better Auth integration
 - **Protected Routes**: Middleware-based route protection
 - **User Profiles**: Avatar display with dropdown menu
 
 ### 💬 Real-time Chat
+
 - **AI-Powered**: Google Gemini 2.5 Flash model
 - **Streaming Responses**: Token-by-token display
 - **Markdown Support**: Full markdown rendering with syntax highlighting
@@ -23,6 +25,7 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 - **Message Actions**: Copy, Like/Dislike feedback
 
 ### 📁 File Upload & Analysis
+
 - **Supported Formats**: Images (JPEG, PNG, GIF, WebP) & PDFs
 - **Vercel Blob Storage**: Scalable file storage
 - **AI Analysis**: Image understanding & PDF text extraction
@@ -30,12 +33,14 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 - **Multiple Attachments**: Upload multiple files per message
 
 ### 🔍 Web Search Integration
+
 - **Google Search Tool**: Real-time web search capability
 - **Smart Usage**: Only activates for current/recent information
 - **Source Attribution**: Clickable citations with hover previews
 - **Grounding Metadata**: Automatic source extraction
 
 ### 📝 Chat Management
+
 - **Auto-Generated Titles**: AI-powered title generation
 - **Rename Chat**: Dialog-based with Enter key support
 - **Delete Chat**: Confirmation dialog with cascade delete
@@ -43,6 +48,7 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 - **Date Grouping**: Today, Yesterday, Older
 
 ### 🎨 UI/UX
+
 - **Theme Toggle**: Light/Dark mode with system preference
 - **Responsive Design**: Mobile-first, adaptive layouts
 - **Custom Scrollbar**: Theme-aware styling
@@ -254,6 +260,7 @@ npm run build
 
 Make sure to set all required environment variables in your Vercel project settings:
 
+- `NEXT_PUBLIC_BASE_URL`
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
