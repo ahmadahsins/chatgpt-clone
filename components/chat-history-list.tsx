@@ -48,9 +48,9 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
             </div>
           ) : (
             chats.map((chat) => (
-              <SidebarMenuItem key={chat.id} className="group/item relative">
-                <div className="flex items-center gap-1">
-                  <SidebarMenuButton asChild className="flex-1">
+              <SidebarMenuItem key={chat.id}>
+                <div className="flex items-center gap-1 w-full pr-1">
+                  <SidebarMenuButton asChild className="flex-1 min-w-0">
                     <Link
                       href={`/chat/${chat.id}`}
                       onClick={() => setOpenMobile(false)}
@@ -77,7 +77,8 @@ export function ChatHistoryList({ chats }: ChatHistoryListProps) {
                         title,
                       });
                     }}
-                    className="h-7 w-7 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                    size="sm"
+                    className="h-7 w-7 hidden lg:flex lg:justify-center lg:items-center"
                   />
                 </div>
               </SidebarMenuItem>

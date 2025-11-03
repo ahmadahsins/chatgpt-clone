@@ -298,9 +298,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
+ahmadahsin.dev - [@ahmadahsin.dev](https://www.ahmadahsin.dev)
 
-Project Link: [https://github.com/yourusername/chatgpt-clone](https://github.com/yourusername/chatgpt-clone)
+Live Demo: [https://chatgptkw.vercel.app](https://chatgptkw.vercel.app)
 
 ---
 

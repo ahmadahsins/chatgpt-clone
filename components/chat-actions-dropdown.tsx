@@ -37,12 +37,14 @@ export function ChatActionsDropdown({
           variant={variant}
           size={size}
           className={className}
+          aria-label="Chat actions"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
           }}
         >
           <MoreHorizontal className="h-4 w-4" />
+          <span className="sr-only">Chat actions</span>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={isLayout ? "end" : "start"} className="w-32">
