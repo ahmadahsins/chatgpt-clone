@@ -231,7 +231,7 @@ export async function POST(req: Request) {
     });
 
     const response = result.toUIMessageStreamResponse({
-      sendSources: true, // Enable sources from Google Search
+      sendSources: false, // Disable sources during streaming - will be shown after redirect from DB
       messageMetadata: ({ part }) => {
         // Send chat ID as metadata when streaming starts
         if (part.type === "start") {

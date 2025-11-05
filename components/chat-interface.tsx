@@ -8,11 +8,7 @@ import { useTheme } from "next-themes";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Action, Actions } from "./ai-elements/actions";
-import {
-  Conversation,
-  ConversationContent,
-  ConversationScrollButton,
-} from "./ai-elements/conversation";
+import { Conversation, ConversationContent } from "./ai-elements/conversation";
 import {
   InlineCitation,
   InlineCitationCard,
@@ -62,13 +58,13 @@ export default function ChatInterface({
   initialMessages = [],
   userName = "User",
 }: ChatInterfaceProps = {}) {
-  const router = useRouter();
-  const params = useParams();
   const [currentChatId, setCurrentChatId] = useState(chatId);
   const [isUploading, setIsUploading] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isLiked, setIsLiked] = useState<boolean | null>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  const router = useRouter();
+  const params = useParams();
   const { theme } = useTheme();
   const hasNavigated = useRef(false);
   const greeting = getGreeting();
@@ -324,6 +320,7 @@ export default function ChatInterface({
 
                       {/* Display sources for assistant messages with Google Search */}
                       {message.role === "assistant" &&
+                        currentChatId &&
                         message.parts.some(
                           (part) => part.type === "source-url"
                         ) && (
