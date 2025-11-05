@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
+import { useSidebar } from "@/components/ui/sidebar";
 
 interface ChatActionsDropdownProps {
   isLayout: boolean;
@@ -30,6 +31,8 @@ export function ChatActionsDropdown({
   size = "icon",
   className = "",
 }: ChatActionsDropdownProps) {
+  const { open } = useSidebar();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,7 +46,7 @@ export function ChatActionsDropdown({
             e.stopPropagation();
           }}
         >
-          <MoreHorizontal className="h-4 w-4" />
+          {open && <MoreHorizontal className="h-4 w-4" />}
           <span className="sr-only">Chat actions</span>
         </Button>
       </DropdownMenuTrigger>
