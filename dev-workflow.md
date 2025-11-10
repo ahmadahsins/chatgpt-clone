@@ -587,3 +587,83 @@ This document details the complete development workflow for the "ChatGPT Clone" 
 - [ ] Error monitoring (Sentry)
 - [ ] Performance monitoring
 - [ ] User feedback collection
+
+---
+
+### **Phase 7: API Protection & Rate Limiting**
+
+**Goal:** Implement rate limiting to protect API endpoints from spam and DDoS attacks before public deployment.
+
+**Completed Tasks:**
+
+1. **Setup Upstash Redis:**
+   - Created Upstash account
+   - Created Redis database
+   - Obtained REST URL and token
+   - Added environment variables
+
+2. **Install Dependencies:**
+   ```bash
+   pnpm add @upstash/ratelimit @upstash/redis
+   ```
+
+3. **Create Rate Limit Utility:**
+   - File: `lib/rate-limit.ts`
+   - Redis client configuration
+   - Rate limiters for different endpoints:
+     - `chatRateLimit`: 10 requests/minute
+     - `uploadRateLimit`: 5 uploads/minute
+     - `authRateLimit`: 5 attempts/5 minutes
+   - `getClientIp()`: Extract IP from headers
+   - `createRateLimitResponse()`: Standardized 429 responses
+
+4. **Implement Rate Limiting in API Routes:**
+   - **Chat API** (`app/api/chat/route.ts`):
+     - Added rate limit check before authentication
+     - Returns 429 if limit exceeded
+     - Includes retry-after header
+   - **Upload API** (`app/api/upload/route.ts`):
+     - Added rate limit check for file uploads
+     - Prevents upload spam
+   - **Auth API** (future implementation):
+     - Rate limit for login/signup attempts
+     - Prevents brute force attacks
+
+5. **Error Response Format:**
+   ```json
+   {
+     "error": "Too many requests",
+     "message": "Rate limit exceeded. Try again in X seconds.",
+     "limit": 10,
+     "remaining": 0,
+     "reset": 1699999999999
+   }
+   ```
+
+6. **Response Headers:**
+   - `X-RateLimit-Limit`: Maximum requests allowed
+   - `X-RateLimit-Remaining`: Requests remaining
+   - `X-RateLimit-Reset`: Timestamp when limit resets
+   - `Retry-After`: Seconds to wait before retry
+
+**Environment Variables:**
+```env
+UPSTASH_REDIS_REST_URL=https://your-redis-url.upstash.io
+UPSTASH_REDIS_REST_TOKEN=your_redis_token
+```
+
+**Testing:**
+- Test rate limiting locally
+- Verify 429 responses
+- Check retry-after headers
+- Test different IP addresses
+- Verify limits reset correctly
+
+**Deployment Checklist:**
+- [ ] Upstash Redis configured in production
+- [ ] Environment variables set in Vercel
+- [ ] Rate limits tested in production
+- [ ] Monitoring setup for rate limit hits
+- [ ] Documentation updated
+
+---

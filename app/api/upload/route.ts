@@ -1,8 +1,21 @@
 import { auth } from "@/lib/auth";
 import { put } from "@vercel/blob";
 import { NextResponse } from "next/server";
+import {
+  uploadRateLimit,
+  createRateLimitResponse,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 export async function POST(req: Request) {
+  // Rate limiting check
+  const ip = getClientIp(req);
+  const { success, limit, remaining, reset } = await uploadRateLimit.limit(ip);
+
+  if (!success) {
+    return createRateLimitResponse(limit, remaining, reset);
+  }
+
   const session = await auth.api.getSession({
     headers: req.headers,
   });

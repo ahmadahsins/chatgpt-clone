@@ -364,62 +364,64 @@ export default function ChatInterface({
                           </div>
                         )}
 
-                      {message.role === "assistant" && status === "ready" && (
-                        <Actions className="ml-2 -mt-5">
-                          <Action
-                            tooltip="Copy"
-                            onClick={() => {
-                              if (
-                                message.parts.some(
-                                  (part) => part.type === "text"
-                                )
-                              ) {
-                                navigator.clipboard.writeText(
-                                  message.parts.find(
+                      {message.role === "assistant" &&
+                        currentChatId &&
+                        status === "ready" && (
+                          <Actions className="ml-2 -mt-5">
+                            <Action
+                              tooltip="Copy"
+                              onClick={() => {
+                                if (
+                                  message.parts.some(
                                     (part) => part.type === "text"
-                                  )?.text ?? ""
-                                );
-                                setCopiedMessageId(message.id);
+                                  )
+                                ) {
+                                  navigator.clipboard.writeText(
+                                    message.parts.find(
+                                      (part) => part.type === "text"
+                                    )?.text ?? ""
+                                  );
+                                  setCopiedMessageId(message.id);
 
-                                setTimeout(() => {
-                                  setCopiedMessageId(null);
-                                }, 2000);
-                              }
-                            }}
-                            label="Copy"
-                          >
-                            {copiedMessageId === message.id ? (
-                              <CheckIcon className="size-4" />
-                            ) : (
-                              <CopyIcon className="size-4" />
-                            )}
-                          </Action>
-                          {isLiked === null ? (
-                            <>
-                              <Action onClick={() => setIsLiked(true)}>
-                                <ThumbsUp className="size-4" />
-                              </Action>
-                              <Action onClick={() => setIsLiked(false)}>
-                                <ThumbsDown className="size-4" />
-                              </Action>
-                            </>
-                          ) : (
-                            <Action onClick={() => setIsLiked(null)}>
-                              {isLiked ? (
-                                <ThumbsUp
-                                  fill={theme === "dark" ? "white" : "black"}
-                                  className="size-4"
-                                />
+                                  setTimeout(() => {
+                                    setCopiedMessageId(null);
+                                  }, 2000);
+                                }
+                              }}
+                              label="Copy"
+                            >
+                              {copiedMessageId === message.id ? (
+                                <CheckIcon className="size-4" />
                               ) : (
-                                <ThumbsDown
-                                  fill={theme === "dark" ? "white" : "black"}
-                                  className="size-4"
-                                />
+                                <CopyIcon className="size-4" />
                               )}
                             </Action>
-                          )}
-                        </Actions>
-                      )}
+                            {isLiked === null ? (
+                              <>
+                                <Action onClick={() => setIsLiked(true)}>
+                                  <ThumbsUp className="size-4" />
+                                </Action>
+                                <Action onClick={() => setIsLiked(false)}>
+                                  <ThumbsDown className="size-4" />
+                                </Action>
+                              </>
+                            ) : (
+                              <Action onClick={() => setIsLiked(null)}>
+                                {isLiked ? (
+                                  <ThumbsUp
+                                    fill={theme === "dark" ? "white" : "black"}
+                                    className="size-4"
+                                  />
+                                ) : (
+                                  <ThumbsDown
+                                    fill={theme === "dark" ? "white" : "black"}
+                                    className="size-4"
+                                  />
+                                )}
+                              </Action>
+                            )}
+                          </Actions>
+                        )}
                     </div>
                   ))}
                 </>

@@ -5,6 +5,11 @@ import { chats, messages } from "@/lib/db/schema";
 import { google } from "@ai-sdk/google";
 import { convertToModelMessages, stepCountIs, streamText, UIMessage } from "ai";
 import { eq } from "drizzle-orm";
+import {
+  chatRateLimit,
+  createRateLimitResponse,
+  getClientIp,
+} from "@/lib/rate-limit";
 
 export const maxDuration = 30;
 
@@ -14,6 +19,14 @@ const tools = {
 };
 
 export async function POST(req: Request) {
+  // Rate limiting check
+  const ip = getClientIp(req);
+  const { success, limit, remaining, reset } = await chatRateLimit.limit(ip);
+
+  if (!success) {
+    return createRateLimitResponse(limit, remaining, reset);
+  }
+
   const session = await auth.api.getSession({
     headers: req.headers,
   });

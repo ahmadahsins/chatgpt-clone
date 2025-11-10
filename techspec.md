@@ -15,6 +15,7 @@ This document outlines the technical specifications for a fully-featured "ChatGP
 - **Database:** Neon (Serverless Postgres)
 - **ORM:** Drizzle ORM
 - **File Storage:** Vercel Blob
+- **Rate Limiting:** Upstash Redis + @upstash/ratelimit
 - **Theme:** next-themes (Light/Dark mode)
 - **Icons:** Lucide React
 
@@ -154,6 +155,30 @@ This document outlines the technical specifications for a fully-featured "ChatGP
   - Optimistic UI updates
   - Router refresh for server components
 
+### **2.9. API Protection & Rate Limiting**
+
+- **Upstash Redis Integration:**
+  - Serverless Redis for rate limit tracking
+  - Edge-compatible for low latency
+  - Global replication for reliability
+- **Per-IP Rate Limiting:**
+  - IP extraction from request headers (x-forwarded-for, x-real-ip, cf-connecting-ip)
+  - Sliding window algorithm for accurate counting
+  - Separate limits per endpoint
+- **Endpoint-Specific Limits:**
+  - Chat API: 10 requests per minute
+  - Upload API: 5 uploads per minute
+  - Auth API: 5 attempts per 5 minutes
+- **Graceful Error Handling:**
+  - 429 status code for rate limit exceeded
+  - Retry-After header with seconds to wait
+  - X-RateLimit headers (Limit, Remaining, Reset)
+  - Clear error messages for users
+- **Analytics:**
+  - Request tracking per IP
+  - Rate limit hit monitoring
+  - Automatic cleanup of expired entries
+
 ---
 
 ## **3. Technology Deep Dive**
@@ -273,6 +298,29 @@ This document outlines the technical specifications for a fully-featured "ChatGP
   - `oklch` color format
   - Light/Dark mode variants
   - Custom scrollbar theming
+
+### **3.9. Rate Limiting with Upstash Redis**
+
+- **Upstash Redis:**
+  - Serverless Redis database
+  - REST API for edge compatibility
+  - Global replication for low latency
+  - Automatic connection pooling
+- **@upstash/ratelimit:**
+  - `Ratelimit` class for rate limiting logic
+  - `slidingWindow()` algorithm for accurate counting
+  - Per-endpoint configuration
+  - Built-in analytics support
+- **Implementation:**
+  - `lib/rate-limit.ts` - Utility functions and rate limiters
+  - `getClientIp()` - Extract IP from various headers
+  - `createRateLimitResponse()` - Standardized error responses
+  - Applied in API routes before authentication check
+- **Sliding Window Algorithm:**
+  - Tracks requests in time windows
+  - Prevents burst attacks
+  - More accurate than fixed window
+  - Automatic cleanup of old entries
 
 ---
 

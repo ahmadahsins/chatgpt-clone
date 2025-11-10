@@ -55,6 +55,13 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 - **Empty State**: Personalized greeting with time-based message
 - **shadcn/ui**: Modern, accessible components
 
+### 🛡️ Security & Rate Limiting
+
+- **API Protection**: Upstash Redis-based rate limiting
+- **Per-IP Limits**: Prevent spam and DDoS attacks
+- **Endpoint-Specific**: Different limits for chat, upload, and auth
+- **Graceful Degradation**: Clear error messages with retry-after headers
+
 ## 🚀 Tech Stack
 
 - **Framework**: [Next.js 15](https://nextjs.org/) (App Router)
@@ -66,6 +73,7 @@ A fully-featured ChatGPT clone built with Next.js 15, featuring real-time AI cha
 - **Database**: [Neon](https://neon.tech/) (Serverless Postgres)
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
 - **File Storage**: [Vercel Blob](https://vercel.com/docs/storage/vercel-blob)
+- **Rate Limiting**: [Upstash Redis](https://upstash.com/) + [@upstash/ratelimit](https://github.com/upstash/ratelimit)
 - **Theme**: [next-themes](https://github.com/pacocoursey/next-themes)
 - **Icons**: [Lucide React](https://lucide.dev/)
 
@@ -77,6 +85,7 @@ Before you begin, ensure you have:
 - A Neon database account
 - Google Cloud Console project (for OAuth & Gemini API)
 - Vercel account (for Blob storage)
+- Upstash account (for rate limiting)
 
 ## 🛠️ Installation
 
@@ -118,6 +127,10 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 
 # Vercel Blob
 BLOB_READ_WRITE_TOKEN=your_vercel_blob_token
+
+# Upstash Redis (Rate Limiting)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_token
 ```
 
 4. **Set up the database**
@@ -203,6 +216,20 @@ chatgpt-clone/
 4. Sources extracted from grounding metadata
 5. Citations displayed with clickable links
 
+### Rate Limiting
+
+1. Client makes request to API endpoint
+2. IP address extracted from request headers
+3. Redis checks request count for IP
+4. If limit exceeded, returns 429 error with retry-after
+5. If allowed, request proceeds normally
+
+**Limits:**
+
+- **Chat API**: 10 requests per minute per IP
+- **Upload API**: 5 uploads per minute per IP
+- **Auth API**: 5 attempts per 5 minutes per IP
+
 ## 🎯 Usage
 
 ### Creating a New Chat
@@ -260,7 +287,6 @@ npm run build
 
 Make sure to set all required environment variables in your Vercel project settings:
 
-- `NEXT_PUBLIC_BASE_URL`
 - `DATABASE_URL`
 - `BETTER_AUTH_SECRET`
 - `BETTER_AUTH_URL`
